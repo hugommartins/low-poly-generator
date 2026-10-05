@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lowpoly"
+version = "0.2.0"
+description = "Edge-aware low-poly image generator (SVG and PNG output)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["numpy", "opencv-python", "scipy"]
+
+[project.optional-dependencies]
+docs = ["matplotlib"]
+test = ["hypothesis", "coverage"]
+
+[project.scripts]
+lowpoly = "lowpoly.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
