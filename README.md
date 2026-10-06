@@ -1,14 +1,23 @@
-# Low Poly Generator
+<div align="center">
+
+# Low Polygon Image Generator
 
 Turn a photo into a low-poly image made of flat-coloured triangles, written as an **SVG** (scalable, one `<polygon>` per triangle) or a **PNG**. An optional **relief mode** lights the triangles as if they had height, so the flat image looks 3D.
 
-The trick that gives the output its look: triangle corners are pulled onto the image's real edges, so the triangles follow outlines instead of cutting across them.
+[![Build](https://github.com/hugommartins/low-poly-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/hugommartins/low-poly-generator/actions) ![Coverage](docs/images/coverage.svg)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white)
+![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
+
+</div>
 
 ![Portrait: original, sparse and dense output](docs/images/sample_portrait.png)
 
-- [Install](#install) · [Quick start](#quick-start)
-- [How it works](#how-it-works) (the part to read if you want to understand the code)
-- [3D relief](#3d-relief-the-illusion-of-depth) (optional lighting that makes the image look 3D)
+- [Install](#install) · [Quick start](#quick-start) · [Options](#options) · [Python API](#python-api)
+- [How it works](#how-it-works) 
+- [3D relief](#3d-relief-the-illusion-of-depth) (optional lighting that makes the image _hopefully_ look 3D)
 - [Tuning guide](#tuning-guide) · [Samples](#samples) · [Limitations](#limitations)
 
 ## Install
@@ -16,7 +25,7 @@ The trick that gives the output its look: triangle corners are pulled onto the i
 Requires Python 3.9+.
 
 ```bash
-git clone low-poly-generator lowpoly && cd lowpoly
+git clone <your repo url> lowpoly && cd lowpoly
 python3 -m venv .venv && source .venv/bin/activate      # optional
 pip install -e .
 ```
@@ -38,14 +47,38 @@ lowpoly photo.jpg out.png --grid-size 10 --scale 2
 # A whole folder, to a folder of PNGs
 lowpoly photos/ lowpoly_out/ --format png --grid-size 14
 
-# If using big photos shrink it first so the grid size means what you expect
+# For big photos shrink it first so the grid size means what you expect
 lowpoly huge.jpg out.svg --max-size 1600 --grid-size 12
 
 # 3D relief illusion (depth guessed from brightness, no extra install)
 lowpoly photo.jpg out.png --grid-size 20 --relief 13
 ```
 
-## Full list of  Options
+The output type comes from the extension (`.svg` or `.png`). The same options on the same image give the same result (the randomness is seeded).
+
+```bash
+PYTHONPATH=src python3 -m lowpoly path/to/image/cat.png test.png --grid-size 20    # macOS / Linux
+```
+```powershell
+$env:PYTHONPATH="src"; py -m lowpoly path\to\image.png test.png --grid-size 20  # Windows PowerShell
+```
+
+**Common errors**
+
+| Message | Cause | Fix |
+|---|---|---|
+| `lowpoly: error: Image not found: ...` | Wrong path, or you are not in the folder you think | Check the path in the message. Use the full path, or drag the file into the Terminal |
+| `Permission denied reading ...` | macOS blocks the terminal app from reading that folder (Downloads, Desktop and Documents are protected) | System Settings > Privacy & Security > Files and Folders (or Full Disk Access): allow your terminal app, then restart it. Or copy the file elsewhere with Finder |
+| `... is a HEIC file (judged by its content ...)` | iPhone/Apple photo, or a download saved as `.jpg` that is really HEIC or AVIF. The extension is not what decides | `sips -s format jpeg photo.jpg --out photo_fixed.jpg`, or Preview > File > Export |
+| `... is empty (0 bytes)` | The download or copy failed | Download it again |
+| `... looks like a JPEG file but could not be decoded` | The file is damaged or cut short | Download or export it again |
+| `... is not a recognised image file` | A web page, text file or other format saved with an image name | Open it to check what it is; the message shows its first bytes |
+| `unrecognized arguments: photo.png ...` | Unquoted spaces in a path | Put the path in quotes |
+| `output must end in .svg or .png` | Output name has another extension, or none | Name the output `something.svg` or `something.png` |
+| `ModuleNotFoundError: No module named 'cv2'` | Dependencies missing in this Python | `pip install -e .` using the same `python3` |
+| Output looks too detailed or too coarse | Grid size does not match the photo size | Add `--max-size 1600`, then lower or raise `--grid-size` |
+
+## Options
 
 | Option | Default | What it does |
 |---|---|---|
@@ -65,27 +98,6 @@ lowpoly photo.jpg out.png --grid-size 20 --relief 13
 | `--shading X` | 1.0 | Strength of the lighting, 0 to 1.5. |
 
 Image sizes matter: `--grid-size 10` on a 400 px image and on a 4000 px image are very different looks. Use `--max-size`, or scale `--grid-size` with the image.
-
-The output type comes from the extension (`.svg` or `.png`). The same options on the same image give the same result (the randomness is seeded).
-
-**Pick a grid size for your photo's resolution.** Phone and camera photos are often 3000 to 4000 px wide. At that size the default `--grid-size 25` makes tiny triangles that look almost like the photo, and a small grid size makes a very large SVG. Add `--max-size 1600` to shrink the photo first. The sample results use cells of about 1.8% (detailed) and 4.5% (bold) of the longest side, which scales to roughly `--grid-size 28` and `--grid-size 70` at 1600 px. Start there and adjust.
-
-**Common errors**
-
-| Message | Cause | Fix |
-|---|---|---|
-| `lowpoly: error: Image not found: ...` | Wrong path, or you are not in the folder you think | Check the path in the message. Use the full path, or drag the file into the Terminal |
-| `Permission denied reading ...` | macOS blocks the terminal app from reading that folder (Downloads, Desktop and Documents are protected) | System Settings > Privacy & Security > Files and Folders (or Full Disk Access): allow your terminal app, then restart it. Or copy the file elsewhere with Finder |
-| `... is a HEIC file (judged by its content ...)` | iPhone/Apple photo, or a download saved as `.jpg` that is really HEIC or AVIF. The extension is not what decides | `sips -s format jpeg photo.jpg --out photo_fixed.jpg`, or Preview > File > Export |
-| `... is empty (0 bytes)` | The download or copy failed | Download it again |
-| `... looks like a JPEG file but could not be decoded` | The file is damaged or cut short | Download or export it again |
-| `... is not a recognised image file` | A web page, text file or other format saved with an image name | Open it to check what it is; the message shows its first bytes |
-| `unrecognized arguments: photo.png ...` | Unquoted spaces in a path | Put the path in quotes |
-| `output must end in .svg or .png` | Output name has another extension, or none | Name the output `something.svg` or `something.png` |
-| `ModuleNotFoundError: No module named 'cv2'` | Dependencies missing in this Python | `pip install -e .` using the same `python3` |
-| Output looks too detailed or too coarse | Grid size does not match the photo size | Add `--max-size 1600`, then lower or raise `--grid-size` |
-
----
 
 ## How it works
 
@@ -259,8 +271,6 @@ The project deliberately includes no neural depth model, so it needs no PyTorch.
 - Baked lighting multiplies the photo's own lighting. If the photo is lit from the left, use `--light-angle 270` or lower `--shading` so the two don't fight.
 - It changes colours only. Triangle outlines and the silhouette stay flat, so the illusion is strongest on a subject with soft, rounded forms.
 
----
-
 ## Tuning guide
 
 **`--grid-size`** controls detail. Smaller cells give more triangles and more detail, but past a point the image just looks like a noisy photo.
@@ -283,7 +293,7 @@ As a starting point, the sparse samples below use cells of about 4 to 5% of the 
 
 ## Samples
 
-Both versions of each sample are in [`samples/outputs/`](samples/outputs) (`*_sparse` = `--grid-size 24`, `*_dense` = `--grid-size 9`, `*_relief` = `--grid-size 20 --relief 13` with the brightness depth guess, each as `.svg` and `.png`).
+Three versions of each sample are in [`samples/outputs/`](samples/outputs) (`*_sparse` = `--grid-size 24`, `*_dense` = `--grid-size 9`, `*_relief` = `--grid-size 20 --relief 13` with the brightness depth guess, each as `.svg` and `.png`).
 
 **Portrait** (public domain, NASA)
 ![portrait](docs/images/sample_portrait.png)
@@ -310,8 +320,9 @@ lowpoly samples/inputs/cat.png cat.svg --grid-size 9
 - **Centroid colouring can pick up noise.** Use `--color-mode mean` for a cleaner result.
 - **Speed.** A 1920x1280 image takes about 0.3 s at `--grid-size 20` and 0.8 s at `--grid-size 10`; `mean` mode at grid 10 takes about 1.4 s. These are single measurements on one machine.
 - **Dense SVGs are large.** 48,000 triangles is about 5 MB of text. Use PNG, or a larger grid size, for big images.
-- **Relief is only as good as the depth map.** The default brightness guess is a stylised trick; see the artefacts listed under [3D relief](#3d-relief-the-illusion-of-depth).
+- **Relief is only as good as the depth map.** The default brightness guess is a stylised trick; see the artefacts listed under [3D relief](#3d-relief-the-illusion-of-depth) (BUG-009).
 
-## Ideas for later
-
-Placing points on depth edges, denser meshes on the subject only (saliency or a background mask), corner detection plus Poisson-disk fill for the points, gradient fills per triangle, palette reduction with k-means, and a constrained triangulation that forces triangle sides along detected contours.
+**Known defects** (details in [docs/BUG_LOG.md](docs/BUG_LOG.md)):
+- **Edge strip (BUG-010).** The right column and bottom row of the output are not painted, because the mesh spans `(width-1) x (height-1)` and the canvas is `width x height`. The original script behaves the same way.
+- **One-pixel-wide or tall images (BUG-011)** fail with a raw `QhullError` traceback instead of an error message.
+- **`--color-mode mean` (BUG-012)** truncates instead of rounding, so colours can be one level too dark.

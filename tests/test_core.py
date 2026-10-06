@@ -19,7 +19,6 @@ def sample(w=120, h=90):
     img[:, w // 2 :] = 255
     return img
 
-""""
 class CoreTests(unittest.TestCase):
     def test_deterministic(self):
         self.assertEqual(
@@ -68,7 +67,7 @@ class CoreTests(unittest.TestCase):
     def test_bad_color_mode(self):
         with self.assertRaises(ValueError):
             generate(sample(), color_mode="nope")
-"""
+
 class FileTests(unittest.TestCase):
     def test_cli_svg_png_and_folder(self):
         src = ROOT / "samples" / "inputs" / "cat.png"
