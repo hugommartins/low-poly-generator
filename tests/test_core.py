@@ -9,7 +9,7 @@ from scipy.spatial import Delaunay
 
 from lowpoly import generate, low_poly, render_file
 from lowpoly.cli import main
-from lowpoly.core import detect_edges, place_points
+from lowpoly.core import detect_edges, place_points, triangle_colors
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -293,6 +293,26 @@ class ReliefTests(unittest.TestCase):
     def test_missing_depth_map(self):
         with self.assertRaises(FileNotFoundError):
             generate(self.img, relief=10, depth="missing.png")
+
+    def test_one_pixel_images_are_rejected_cleanly(self):
+        for h, w in [(1, 1), (1, 50), (50, 1)]:
+            with (
+                self.subTest(size=f"{w}x{h}"),
+                self.assertRaisesRegex(ValueError, "2x2"),
+            ):
+                generate(np.zeros((h, w, 3), np.uint8))
+
+    def test_the_smallest_accepted_image_renders(self):
+        img = np.zeros((2, 2, 3), np.uint8)
+        self.assertEqual(generate(img).to_png().shape, (2, 2, 3))
+        self.assertEqual(low_poly(img).count("<polygon"), 2)
+
+    def test_mean_mode_rounds_instead_of_truncating(self):
+        img = np.full((4, 4, 3), 101, np.uint8)
+        img[0, 0] = 100  # triangle mean is just under 101, so truncation gives 100
+        pts = np.array([[0, 0], [3, 0], [0, 3]])
+        out = triangle_colors(pts, np.array([[0, 1, 2]]), img, mode="mean")
+        self.assertEqual(out.tolist(), [[101, 101, 101]])
 
 
 if __name__ == "__main__":

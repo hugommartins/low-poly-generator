@@ -85,7 +85,7 @@ def triangle_colors(pts, simplices, img, mode="centroid"):
         x1, y1 = t.max(axis=0) + 1
         mask = np.zeros((y1 - y0, x1 - x0), np.uint8)
         cv2.fillConvexPoly(mask, (t - [x0, y0]).astype(np.int32), 255)
-        out[i] = np.array(cv2.mean(img[y0:y1, x0:x1], mask=mask)[:3])[::-1]
+        out[i] = np.rint(cv2.mean(img[y0:y1, x0:x1], mask=mask)[:3])[::-1]
     return out
 
 
@@ -106,8 +106,10 @@ class Result:
     def to_svg(self):
         """SVG text: one <polygon> per triangle. The same-colour stroke hides anti-aliasing seams."""
         w, h = self.size
+        # Points are pixel indices 0..w-1 and 0..h-1, so the mesh spans w-1 by h-1 units.
+        vw, vh = max(w - 1, 1), max(h - 1, 1)
         lines = [
-            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="100%">'
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {vw} {vh}" width="100%" height="100%">'
         ]
         for tri, (r, g, b) in zip(self.simplices, self.colors):
             points = " ".join(f"{x},{y}" for x, y in self.points[tri])
@@ -122,9 +124,11 @@ class Result:
         """Rasterise to a BGR array (no SVG library needed). Drawn at scale*supersample, then averaged down."""
         w, h = self.size
         k = scale * supersample
+        # Points are pixel indices 0..w-1 and 0..h-1; stretch them so the mesh covers the whole canvas.
+        fit = np.array([w / max(w - 1, 1), h / max(h - 1, 1)])
         canvas = np.zeros((h * k, w * k, 3), np.uint8)
         for tri, (r, g, b) in zip(self.simplices, self.colors):
-            poly = np.round(self.points[tri] * k).astype(np.int32)
+            poly = np.round(self.points[tri] * fit * k).astype(np.int32)
             cv2.fillConvexPoly(canvas, poly, (int(b), int(g), int(r)))
         if supersample > 1:
             canvas = cv2.resize(
@@ -153,12 +157,14 @@ def generate(
     relief > 0 turns on the 3D illusion (see relief_colors). `depth` is where heights come from:
     None (brightness guess), a path to a greyscale depth image, or an (h, w) array. Brighter = closer.
     """
+    h, w = img.shape[:2]
+    if min(h, w) < 2:
+        raise ValueError(f"image must be at least 2x2 pixels, got {w}x{h}")
     smoothed = smooth(img, saturation)
     edges = detect_edges(img, canny_low, canny_high)
     pts = place_points(edges, grid_size, jitter, seed)
     tri = Delaunay(pts)
     colors = triangle_colors(pts, tri.simplices, smoothed, color_mode)
-    h, w = img.shape[:2]
     flat, d = None, None
     if relief and relief > 0:
         if depth is None:

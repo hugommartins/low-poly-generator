@@ -6,9 +6,6 @@ images and settings. A failing case is shrunk to the smallest input that still f
 Run:   pip install hypothesis
        python -m unittest tests.test_properties -v
 Profiles (set HYPOTHESIS_PROFILE): "dev" 200 examples (default), "ci" 100 examples and reproducible runs.
-
-Known defects are marked expectedFailure. unittest reports an unexpected success as a failure, so fixing
-a defect forces the marker to be removed.
 """
 
 import os
@@ -239,7 +236,6 @@ class OutputProperties(unittest.TestCase):
         r = generate(img, grid_size=grid, jitter=jitter, seed=seed)
         self.assertTrue((r.colors == r.smoothed[0, 0][::-1]).all())
 
-    @unittest.expectedFailure  # BUG-012: mean mode truncates instead of rounding, so colours can come out 1 too dark
     @given(images(kinds=["flat"]), grids, jitters, seeds)
     def test_a_flat_image_gives_triangles_of_that_one_colour_in_mean_mode(
         self, img, grid, jitter, seed
@@ -254,7 +250,7 @@ class OutputProperties(unittest.TestCase):
         h, w = img.shape[:2]
         r = generate(img, grid_size=grid, jitter=jitter, seed=seed)
         root = ET.fromstring(r.to_svg())
-        self.assertEqual(root.get("viewBox"), f"0 0 {w} {h}")
+        self.assertEqual(root.get("viewBox"), f"0 0 {w - 1} {h - 1}")
         polys = root.findall(SVG + "polygon")
         self.assertEqual(len(polys), len(r.simplices))
         for p in polys:
@@ -273,13 +269,11 @@ class OutputProperties(unittest.TestCase):
             (h * scale, w * scale, 3),
         )
 
-    @unittest.expectedFailure  # BUG-010: the last row and column of the PNG are not painted
     @given(images(kinds=["flat"], min_side=4), grids, jitters, seeds)
     def test_a_flat_image_gives_a_flat_png(self, img, grid, jitter, seed):
         png = generate(img, grid_size=grid, jitter=jitter, seed=seed).to_png()
         self.assertTrue((png == png[0, 0]).all())
 
-    @unittest.expectedFailure  # BUG-011: a 1-pixel-wide or tall image raises a raw QhullError
     @given(st.integers(1, 60), st.sampled_from(["row", "column"]), grids)
     def test_one_pixel_images_are_rejected_cleanly_or_rendered(self, n, shape, grid):
         img = np.zeros((1, n, 3) if shape == "row" else (n, 1, 3), np.uint8)

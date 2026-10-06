@@ -3,6 +3,10 @@
 The oracle is tests/reference/border_uniform_low_poly.py, run in the same environment as the package,
 so OpenCV and SciPy builds are identical on both sides and a byte-for-byte comparison is valid on any
 platform. (A stored golden file would not be: its bytes depend on the build that made it.)
+
+One deliberate difference: the original script writes viewBox="0 0 w h" although its points only span
+w-1 by h-1, leaving a one-pixel strip uncovered (BUG-010). The package writes the viewBox the mesh
+actually fills; everything else must still match byte for byte.
 """
 
 import sys
@@ -35,7 +39,12 @@ class DifferentialTests(unittest.TestCase):
     def check(self, path, grid, jitter):
         with tempfile.TemporaryDirectory() as tmp:
             expected = reference_svg(path, grid, jitter, tmp)
-        actual = low_poly(load_image(path), grid_size=grid, jitter=jitter)
+        img = load_image(path)
+        h, w = img.shape[:2]
+        expected = expected.replace(
+            f'viewBox="0 0 {w} {h}"', f'viewBox="0 0 {w - 1} {h - 1}"', 1
+        )
+        actual = low_poly(img, grid_size=grid, jitter=jitter)
         self.assertEqual(
             actual.count("<polygon"),
             expected.count("<polygon"),
