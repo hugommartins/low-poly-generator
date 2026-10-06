@@ -4,7 +4,7 @@
 
 Turn a photo into a low-poly image made of flat-coloured triangles, written as an **SVG** (scalable, one `<polygon>` per triangle) or a **PNG**. An optional **relief mode** lights the triangles as if they had height, so the flat image looks 3D.
 
-[![Build](https://github.com/hugommartins/low-poly-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/hugommartins/low-poly-generator/actions) ![Coverage](docs/images/coverage.svg)
+![CI](https://img.shields.io/github/actions/workflow/status/hugommartins/low-poly-generator/test.yml?branch=main&style=flat-square&logo=github) ![Coverage](docs/images/coverage.svg)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white)
