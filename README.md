@@ -13,13 +13,12 @@ Turn a photo into a low-poly image made of flat-coloured triangles, written as a
 
 ![Portrait: original, sparse and dense output](docs/images/sample_portrait.png)
 
-[Install](#install) · [Quick start](#quick-start) · [Options](#options) · [Python API](#python-api)
+[Install](#install) · [Quick start](#quick-start) · [Options](#options)
 
 [How it works](#how-it-works) 
 
-[3D relief](#3d-relief-the-illusion-of-depth) (optional)
 
-[Tuning guide](#tuning-guide) · [Samples](#samples) · [Limitations](#limitations)
+[Samples](#samples) · [Limitations](#limitations) · [Roadmap](#roadmap)
 
 </div>
 
@@ -41,9 +40,6 @@ This installs three dependencies (`numpy`, `opencv-python`, `scipy`) and the `lo
 # One image to SVG, using the defaults
 lowpoly photo.jpg out.svg
 
-# Denser mesh (smaller cells = more triangles)
-lowpoly photo.jpg out.svg --grid-size 10
-
 # PNG instead, at 2x size
 lowpoly photo.jpg out.png --grid-size 10 --scale 2
 
@@ -52,9 +48,6 @@ lowpoly photos/ lowpoly_out/ --format png --grid-size 14
 
 # For big photos shrink it first so the grid size means what you expect
 lowpoly huge.jpg out.svg --max-size 1600 --grid-size 12
-
-# 3D relief illusion (depth guessed from brightness, no extra install)
-lowpoly photo.jpg out.png --grid-size 20 --relief 13
 ```
 
 The output type comes from the extension (`.svg` or `.png`). The same options on the same image give the same result (the randomness is seeded).
@@ -81,7 +74,7 @@ $env:PYTHONPATH="src"; py -m lowpoly path\to\image.png test.png --grid-size 20  
 | `ModuleNotFoundError: No module named 'cv2'` | Dependencies missing in this Python | `pip install -e .` using the same `python3` |
 | Output looks too detailed or too coarse | Grid size does not match the photo size | Add `--max-size 1600`, then lower or raise `--grid-size` |
 
-## Options
+## Options and tuning
 
 | Option | Default | What it does |
 |---|---|---|
@@ -233,7 +226,7 @@ The difference is subtle at normal grid sizes; it shows most with large triangle
 
 ### 3D relief: the illusion of depth
 
-Real low-poly 3D art is a mesh of triangles that sit at different heights and catch light differently. You can fake that look without building any 3D object: give each triangle a height, work out how it tilts, and darken or brighten its flat colour as a light would. The image stays flat; only the colours change. Turn it on with `--relief`.
+Real low-poly 3D art is a mesh of triangles that sit at different heights and catch light differently. _In theory_ can fake that look without building any 3D object: give each triangle a height, work out how it tilts, and darken or brighten its flat colour as a light would. The image stays flat; only the colours change. Turn it on with `--relief`.
 
 ![Flat triangles, a brightness-based depth guess, and the lit result](docs/images/relief_cat.png)
 
@@ -275,26 +268,6 @@ The project deliberately includes no neural depth model, so it needs no PyTorch.
 - Baked lighting multiplies the photo's own lighting. If the photo is lit from the left, use `--light-angle 270` or lower `--shading` so the two don't fight.
 - It changes colours only. Triangle outlines and the silhouette stay flat, so the illusion is strongest on a subject with soft, rounded forms.
 
-## Tuning guide
-
-**`--grid-size`** controls detail. Smaller cells give more triangles and more detail, but past a point the image just looks like a noisy photo.
-
-![grid_size 40, 20 and 10](docs/images/grid_size.png)
-
-As a starting point, the sparse samples below use cells of about 4 to 5% of the image's longest side (24 px on a 450 to 640 px photo) and the dense ones about 1.5 to 2% (9 px). Scale from there to your image size.
-
-**`--canny-low/high`** decide how much of the image counts as an edge. Raise them for clean, bold outlines; lower them to capture fine texture (hair, fur, foliage), at the cost of points crowding onto texture noise. Keep `high` at roughly 2x `low`.
-
-**`--jitter`** has two effects: it is the random offset in flat areas (0 gives a rigid grid), and the radius in which a cell looks for an edge pixel to snap to. Above half of `--grid-size`, neighbouring cells' search windows overlap. The default of 12 was chosen for grid sizes around 10 to 25.
-
-**`--saturation`**: 1.0 is faithful, 1.3 (default) compensates for smoothing, above 1.6 looks stylised.
-
-**`--color-mode mean`** when you see stray off-colour triangles.
-
-**`--relief`** (see [3D relief](#3d-relief-the-illusion-of-depth)): coarser meshes (`--grid-size` 20 to 28 on a 450 px image) read as faceted relief more clearly than very fine ones, where the shading turns into texture.
-
-**`--seed`**: the mesh is random but repeatable. If one region looks unlucky, try another seed.
-
 ## Samples
 
 Three versions of each sample are in [`samples/outputs/`](samples/outputs) (`*_sparse` = `--grid-size 24`, `*_dense` = `--grid-size 9`, `*_relief` = `--grid-size 20 --relief 13` with the brightness depth guess, each as `.svg` and `.png`).
@@ -332,14 +305,14 @@ This roadmap focuses on resolving known limitations and expanding the core capab
 
 ### Phase 1: Quality and Performance
 
-- [  ] **Mitigate relief artefacts (BUG-009):** Implement point placement directly along depth edges to prevent triangles from straddling sudden depth steps, reducing dark/bright spikes in relief mode.
+- [ ] **Mitigate relief artefacts (BUG-009):** Implement point placement directly along depth edges to prevent triangles from straddling sudden depth steps, reducing dark/bright spikes in relief mode.
 - [ ] **Optimize `mean` color mode:** Accelerate the mask-and-fill operations used for averaging triangle colors to reduce the performance gap with `centroid` mode on dense meshes.
 - [ ] **Improved edge fidelity:** Modify the point selection algorithm to better preserve continuous lines, preventing triangle sides from cutting across thin or diagonal outlines.
 
 ### Phase 2: Algorithmic Enhancements
 
 - [ ] **Adaptive grid sizing:** Introduce variable cell sizes based on local image detail (e.g., edge density). This will allocate more triangles to detailed subjects (like faces) and fewer to empty spaces (like skies) automatically. 
-- [ ]**Depth-aware triangulation:** Factor the depth map into the Delaunay triangulation process so the generated mesh naturally respects physical 3D boundaries.
+- [ ] **Depth-aware triangulation:** Factor the depth map into the Delaunay triangulation process so the generated mesh naturally respects physical 3D boundaries.
 
 ### Phase 3: Expanded Capabilities
 
