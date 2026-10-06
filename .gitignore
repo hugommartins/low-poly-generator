@@ -9,3 +9,4 @@ dist/
 coverage.xml
 mutation-report.txt
 .mutmut-cache
+.ruff_cache/

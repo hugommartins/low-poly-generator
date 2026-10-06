@@ -19,3 +19,7 @@ lowpoly = "lowpoly.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=. --cov-report=xml"
