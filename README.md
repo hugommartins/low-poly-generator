@@ -11,14 +11,17 @@ Turn a photo into a low-poly image made of flat-coloured triangles, written as a
 ![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
 
-</div>
-
 ![Portrait: original, sparse and dense output](docs/images/sample_portrait.png)
 
-- [Install](#install) · [Quick start](#quick-start) · [Options](#options) · [Python API](#python-api)
-- [How it works](#how-it-works) 
-- [3D relief](#3d-relief-the-illusion-of-depth) (optional lighting that makes the image _hopefully_ look 3D)
-- [Tuning guide](#tuning-guide) · [Samples](#samples) · [Limitations](#limitations)
+[Install](#install) · [Quick start](#quick-start) · [Options](#options) · [Python API](#python-api)
+
+[How it works](#how-it-works) 
+
+[3D relief](#3d-relief-the-illusion-of-depth) (optional)
+
+[Tuning guide](#tuning-guide) · [Samples](#samples) · [Limitations](#limitations)
+
+</div>
 
 ## Install
 
@@ -323,7 +326,21 @@ lowpoly samples/inputs/cat.png cat.svg --grid-size 9
 - **Dense SVGs are large.** 48,000 triangles is about 5 MB of text. Use PNG, or a larger grid size, for big images.
 - **Relief is only as good as the depth map.** The default brightness guess is a stylised trick; see the artefacts listed under [3D relief](#3d-relief-the-illusion-of-depth) (BUG-009).
 
-**Known defects** (details in [docs/BUG_LOG.md](docs/BUG_LOG.md)):
-- **Edge strip (BUG-010).** The right column and bottom row of the output are not painted, because the mesh spans `(width-1) x (height-1)` and the canvas is `width x height`. The original script behaves the same way.
-- **One-pixel-wide or tall images (BUG-011)** fail with a raw `QhullError` traceback instead of an error message.
-- **`--color-mode mean` (BUG-012)** truncates instead of rounding, so colours can be one level too dark.
+## Roadmap
+
+This roadmap focuses on resolving known limitations and expanding the core capabilities of the generator. 
+
+### Phase 1: Quality and Performance
+
+- [  ] **Mitigate relief artefacts (BUG-009):** Implement point placement directly along depth edges to prevent triangles from straddling sudden depth steps, reducing dark/bright spikes in relief mode.
+- [ ] **Optimize `mean` color mode:** Accelerate the mask-and-fill operations used for averaging triangle colors to reduce the performance gap with `centroid` mode on dense meshes.
+- [ ] **Improved edge fidelity:** Modify the point selection algorithm to better preserve continuous lines, preventing triangle sides from cutting across thin or diagonal outlines.
+
+### Phase 2: Algorithmic Enhancements
+
+- [ ] **Adaptive grid sizing:** Introduce variable cell sizes based on local image detail (e.g., edge density). This will allocate more triangles to detailed subjects (like faces) and fewer to empty spaces (like skies) automatically. 
+- [ ]**Depth-aware triangulation:** Factor the depth map into the Delaunay triangulation process so the generated mesh naturally respects physical 3D boundaries.
+
+### Phase 3: Expanded Capabilities
+
+- [ ] **Interactive tuning:** Build a lightweight live-preview window using OpenCV to let users adjust `--grid-size`, `--canny-low/high`, and `--relief` sliders before exporting.
