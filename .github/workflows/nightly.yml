@@ -1,0 +1,67 @@
+name: Nightly
+
+# Slow or exploratory checks. Failures here open a conversation; they do not block a pull request.
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC every day
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  latest-dependencies:
+    name: Newest versions of every dependency
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install the newest release of everything
+        run: pip install -e ".[test]" --upgrade --upgrade-strategy eager
+      - run: python -c "import numpy, cv2, scipy; print('numpy', numpy.__version__, 'opencv', cv2.__version__, 'scipy', scipy.__version__)"
+      - name: Run the suite with a larger random sample
+        env:
+          HYPOTHESIS_PROFILE: dev # 200 random examples per property; a failure prints a reproducing example
+        run: python -m unittest discover -s tests -v
+
+  docs-build:
+    name: README figures and sample outputs still regenerate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[docs]"
+      - run: python scripts/make_docs.py
+      - name: Keep the generated figures for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-docs
+          path: |
+            docs/images
+            samples/outputs
+
+  mutation:
+    name: Mutation testing (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . "mutmut<3"
+      - name: Mutate the core module and run the suite against each mutant
+        run: mutmut run --paths-to-mutate src/lowpoly/core.py --runner "python -m unittest discover -s tests" || true
+      - name: Report which mutants survived
+        run: mutmut results | tee mutation-report.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: mutation-report.txt

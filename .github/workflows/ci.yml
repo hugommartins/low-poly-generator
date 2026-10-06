@@ -1,0 +1,130 @@
+name: CI
+
+# Fast feedback on every push and pull request. Slow or exploratory checks live in nightly.yml.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Advisory until the code base has been run through ruff once. Remove the next line to make it a gate.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check src tests scripts
+      - run: ruff format --check src tests scripts
+
+  test:
+    name: Test (${{ matrix.os }}, py${{ matrix.python }}, ${{ matrix.deps }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false # one failing leg must not hide the others
+      matrix:
+        include:
+          # Oldest supported Python with NumPy 1.x. The NumPy 2 break (np.cross on 2D vectors) was found this way.
+          - { os: ubuntu-latest, python: "3.9", deps: "legacy" }
+          - { os: ubuntu-latest, python: "3.11", deps: "legacy" }
+          # Current dependencies across the supported Python range.
+          - { os: ubuntu-latest, python: "3.10", deps: "current" }
+          - { os: ubuntu-latest, python: "3.12", deps: "current" }
+          - { os: ubuntu-latest, python: "3.13", deps: "current" }
+          # Other operating systems on one Python. Intel macOS matters because the project's author uses one.
+          - { os: macos-latest, python: "3.12", deps: "current" } # Apple silicon
+          - { os: macos-15-intel, python: "3.12", deps: "current" } # Intel; GitHub supports this label until fall 2027
+          - { os: windows-latest, python: "3.12", deps: "current" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install (current dependencies)
+        if: matrix.deps == 'current'
+        run: pip install -e ".[test]"
+
+      - name: Install (legacy NumPy 1.x)
+        if: matrix.deps == 'legacy'
+        # Newer opencv-python releases may require NumPy 2. If pip cannot resolve this pair, lower the opencv cap.
+        run: pip install -e ".[test]" "numpy<2" "opencv-python<4.12"
+
+      - name: Show versions
+        run: python -c "import sys, numpy, cv2, scipy; print(sys.version); print('numpy', numpy.__version__, 'opencv', cv2.__version__, 'scipy', scipy.__version__)"
+
+      - name: Run tests with coverage
+        env:
+          HYPOTHESIS_PROFILE: ci # 100 fixed examples per property, same result on every run
+        run: |
+          coverage run --branch --source=src -m unittest discover -s tests -v
+          coverage report --show-missing
+          coverage xml
+        # Coverage is reported, not gated, until a baseline exists. Then add: --fail-under=<baseline>
+
+      - name: Upload coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  package:
+    name: Build and smoke test the package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist and wheel
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*
+      - name: Install the wheel into a clean environment and use the CLI
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+          /tmp/clean/bin/lowpoly --help
+          /tmp/clean/bin/lowpoly samples/inputs/cat.png /tmp/out.svg --grid-size 25
+          /tmp/clean/bin/lowpoly samples/inputs/cat.png /tmp/out.png --grid-size 25
+          test -s /tmp/out.svg && head -c 200 /tmp/out.svg | grep -q "<svg"
+          test -s /tmp/out.png
+      - name: A bad input must fail with a clean message and a non-zero exit code
+        run: |
+          printf '' > /tmp/empty.jpg
+          if /tmp/clean/bin/lowpoly /tmp/empty.jpg /tmp/x.svg 2> /tmp/err.txt; then echo "expected failure"; exit 1; fi
+          grep -q "lowpoly: error:" /tmp/err.txt
+          ! grep -q "Traceback" /tmp/err.txt
+
+  audit:
+    name: Dependency audit (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt
