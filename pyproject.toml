@@ -23,3 +23,11 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --cov=. --cov-report=xml"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"] # Errors, Pyflakes, Isort, Warnings
+ignore = ["E501"]

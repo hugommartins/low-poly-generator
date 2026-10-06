@@ -142,7 +142,10 @@ def fig_pipeline():
 # ---------------------------------------------------------------- figure 2: bilateral vs gaussian
 def fig_bilateral():
     img = load("portrait.png")[40:200, 130:290]
-    big = lambda a: cv2.resize(a, None, fx=2.2, fy=2.2, interpolation=cv2.INTER_NEAREST)
+
+    def big(a):
+        return cv2.resize(a, None, fx=2.2, fy=2.2, interpolation=cv2.INTER_NEAREST)
+
     gauss = cv2.GaussianBlur(img, (9, 9), 0)
     bil = cv2.bilateralFilter(img, 9, 75, 75)
     panels(
@@ -171,7 +174,10 @@ def fig_canny():
     gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0)
     gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1)
     mag = np.clip(np.hypot(gx, gy) / 2, 0, 255).astype(np.uint8)
-    e = lambda lo, hi: cv2.Canny(gray, lo, hi)
+
+    def e(lo, hi):
+        return cv2.Canny(gray, lo, hi)
+
     panels(
         [
             ("Gradient strength", mag, "step 1: how fast brightness changes"),
