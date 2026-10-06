@@ -1,4 +1,5 @@
 """Low-poly pipeline: smooth -> Canny edges -> edge-snapped points -> Delaunay -> flat colours -> SVG/PNG."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,7 +31,9 @@ def place_points(edges, grid_size=25, jitter=12, seed=42, anchors=True):
     picked at random and used as the point (so triangle corners sit on contours). Otherwise the point
     is the cell centre shifted by a random offset in [-jitter, jitter].
     """
-    rs = np.random.RandomState(seed)  # same stream as the original script's np.random.seed(seed)
+    rs = np.random.RandomState(
+        seed
+    )  # same stream as the original script's np.random.seed(seed)
     h, w = edges.shape
     pts = []
     for y in range(0, h, grid_size):
@@ -91,7 +94,9 @@ def depth_from_brightness(smoothed):
     d = cv2.GaussianBlur(gray, (0, 0), max(1.0, 0.009 * max(h, w)))
     d = (d - d.min()) / max(float(d.max() - d.min()), 1e-6)
     yy, xx = np.mgrid[0:h, 0:w]
-    dome = np.exp(-(((xx - w / 2) / (w * 0.45)) ** 2 + ((yy - h / 2) / (h * 0.45)) ** 2))
+    dome = np.exp(
+        -(((xx - w / 2) / (w * 0.45)) ** 2 + ((yy - h / 2) / (h * 0.45)) ** 2)
+    )
     return (0.65 * d + 0.35 * dome).astype(np.float32)
 
 
@@ -110,8 +115,18 @@ def normalize_depth(d, size):
     return ((d - d.min()) / max(float(d.max() - d.min()), 1e-6)).astype(np.float32)
 
 
-def relief_colors(pts, simplices, colors, depth, relief=13.0, light_angle=315.0, light_elevation=55.0,
-                  shading=1.0, ambient=0.45, max_tilt=60.0):
+def relief_colors(
+    pts,
+    simplices,
+    colors,
+    depth,
+    relief=13.0,
+    light_angle=315.0,
+    light_elevation=55.0,
+    shading=1.0,
+    ambient=0.45,
+    max_tilt=60.0,
+):
     """Shade each triangle by how it tilts toward a light, using heights taken from `depth` at its corners.
 
     relief:          height of the full depth range, as a percent of the image's longest side
@@ -122,10 +137,13 @@ def relief_colors(pts, simplices, colors, depth, relief=13.0, light_angle=315.0,
     """
     h, w = depth.shape
     z = depth[pts[:, 1], pts[:, 0]] * (relief / 100.0) * max(h, w)
-    a, b, c = [np.c_[pts[simplices[:, k]], z[simplices[:, k]]].astype(np.float64) for k in range(3)]
+    a, b, c = [
+        np.c_[pts[simplices[:, k]], z[simplices[:, k]]].astype(np.float64)
+        for k in range(3)
+    ]
     n = np.cross(b - a, c - a)
     n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
-    n[n[:, 2] < 0] *= -1                       # normals face the viewer
+    n[n[:, 2] < 0] *= -1  # normals face the viewer
     # Long thin triangles that straddle a sudden depth step would tilt almost edge-on and flash black or white.
     # Capping the tilt keeps them from dominating the image.
     sin_max, cos_max = np.sin(np.radians(max_tilt)), np.cos(np.radians(max_tilt))
@@ -136,34 +154,45 @@ def relief_colors(pts, simplices, colors, depth, relief=13.0, light_angle=315.0,
     n[:, 1] *= scale
     n[over, 2] = cos_max
     az, el = np.radians(light_angle), np.radians(light_elevation)
-    light = np.array([np.sin(az) * np.cos(el), -np.cos(az) * np.cos(el), np.sin(el)])  # image y points down
+    light = np.array(
+        [np.sin(az) * np.cos(el), -np.cos(az) * np.cos(el), np.sin(el)]
+    )  # image y points down
     lam = np.clip(n @ light, 0, 1)
-    k = (1 - ambient) / light[2]               # a flat facet (normal straight at the viewer) keeps its colour
+    k = (1 - ambient) / light[
+        2
+    ]  # a flat facet (normal straight at the viewer) keeps its colour
     factor = 1 + (ambient + k * lam - 1) * shading
-    return np.clip(np.rint(colors.astype(np.float64) * factor[:, None]), 0, 255).astype(np.uint8)
+    return np.clip(np.rint(colors.astype(np.float64) * factor[:, None]), 0, 255).astype(
+        np.uint8
+    )
 
 
 # --------------------------------------------------------------------------- result object
 @dataclass
 class Result:
     """Everything the pipeline produced, so each stage can be inspected or drawn."""
-    size: tuple          # (width, height)
+
+    size: tuple  # (width, height)
     smoothed: np.ndarray  # BGR, after bilateral filter + saturation
-    edges: np.ndarray     # Canny map
-    points: np.ndarray    # (n, 2) x, y
+    edges: np.ndarray  # Canny map
+    points: np.ndarray  # (n, 2) x, y
     simplices: np.ndarray  # (m, 3) indices into points
-    colors: np.ndarray    # (m, 3) RGB uint8 (lit colours when relief is on)
+    colors: np.ndarray  # (m, 3) RGB uint8 (lit colours when relief is on)
     depth: object = None  # (h, w) float 0..1, only when relief is on
     flat_colors: object = None  # (m, 3) colours before relief lighting
 
     def to_svg(self):
         """SVG text: one <polygon> per triangle. The same-colour stroke hides anti-aliasing seams."""
         w, h = self.size
-        lines = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="100%">']
+        lines = [
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="100%">'
+        ]
         for tri, (r, g, b) in zip(self.simplices, self.colors):
             points = " ".join(f"{x},{y}" for x, y in self.points[tri])
             fill = f"rgb({r},{g},{b})"
-            lines.append(f'  <polygon points="{points}" fill="{fill}" stroke="{fill}" stroke-width="0.5"/>')
+            lines.append(
+                f'  <polygon points="{points}" fill="{fill}" stroke="{fill}" stroke-width="0.5"/>'
+            )
         lines.append("</svg>")
         return "\n".join(lines)
 
@@ -176,13 +205,27 @@ class Result:
             poly = np.round(self.points[tri] * k).astype(np.int32)
             cv2.fillConvexPoly(canvas, poly, (int(b), int(g), int(r)))
         if supersample > 1:
-            canvas = cv2.resize(canvas, (w * scale, h * scale), interpolation=cv2.INTER_AREA)
+            canvas = cv2.resize(
+                canvas, (w * scale, h * scale), interpolation=cv2.INTER_AREA
+            )
         return canvas
 
 
-def generate(img, grid_size=25, jitter=12, saturation=1.3, seed=42, color_mode="centroid",
-             canny_low=100, canny_high=200, relief=0.0, depth=None, light_angle=315.0,
-             light_elevation=55.0, shading=1.0):
+def generate(
+    img,
+    grid_size=25,
+    jitter=12,
+    saturation=1.3,
+    seed=42,
+    color_mode="centroid",
+    canny_low=100,
+    canny_high=200,
+    relief=0.0,
+    depth=None,
+    light_angle=315.0,
+    light_elevation=55.0,
+    shading=1.0,
+):
     """Run the whole pipeline on a BGR image array and return a Result.
 
     relief > 0 turns on the 3D illusion (see relief_colors). `depth` is where heights come from:
@@ -203,7 +246,9 @@ def generate(img, grid_size=25, jitter=12, saturation=1.3, seed=42, color_mode="
         else:
             d = normalize_depth(np.asarray(depth), (w, h))
         flat = colors
-        colors = relief_colors(pts, tri.simplices, colors, d, relief, light_angle, light_elevation, shading)
+        colors = relief_colors(
+            pts, tri.simplices, colors, d, relief, light_angle, light_elevation, shading
+        )
     return Result((w, h), smoothed, edges, pts, tri.simplices, colors, d, flat)
 
 
@@ -255,22 +300,35 @@ def load_image(path, max_size=None):
             f"Permission denied reading {path}. The file exists but this program may not open it. "
             "On macOS: System Settings > Privacy & Security > Files and Folders (or Full Disk Access), "
             "allow your terminal app to access that folder, then restart the terminal. "
-            "Or copy the file somewhere else with Finder and use that path.") from None
+            "Or copy the file somewhere else with Finder and use that path."
+        ) from None
     if not data:
-        raise ValueError(f"{path} is empty (0 bytes). The download or copy probably failed.")
+        raise ValueError(
+            f"{path} is empty (0 bytes). The download or copy probably failed."
+        )
     img = None
     kind = sniff_format(data)
     if kind in SUPPORTED:  # decode by content; the extension can be wrong
         img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
         if img is None:
-            raise ValueError(f"{path} looks like a {kind} file but could not be decoded; it may be damaged or incomplete.")
+            raise ValueError(
+                f"{path} looks like a {kind} file but could not be decoded; it may be damaged or incomplete."
+            )
     elif kind:
-        hint = (" On macOS: sips -s format jpeg INPUT --out OUTPUT.jpg" if kind in ("HEIC", "AVIF") else "")
-        raise ValueError(f"{path} is a {kind} file (judged by its content, whatever its name says), "
-                         f"which is not supported. Convert it to JPG or PNG first.{hint}")
+        hint = (
+            " On macOS: sips -s format jpeg INPUT --out OUTPUT.jpg"
+            if kind in ("HEIC", "AVIF")
+            else ""
+        )
+        raise ValueError(
+            f"{path} is a {kind} file (judged by its content, whatever its name says), "
+            f"which is not supported. Convert it to JPG or PNG first.{hint}"
+        )
     else:
-        raise ValueError(f"{path} is not a recognised image file (first bytes: {data[:8].hex(' ')}). "
-                         "Supported: JPEG, PNG, WebP, BMP, TIFF, GIF.")
+        raise ValueError(
+            f"{path} is not a recognised image file (first bytes: {data[:8].hex(' ')}). "
+            "Supported: JPEG, PNG, WebP, BMP, TIFF, GIF."
+        )
     if max_size and max(img.shape[:2]) > max_size:
         s = max_size / max(img.shape[:2])
         img = cv2.resize(img, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)

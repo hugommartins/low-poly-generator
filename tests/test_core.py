@@ -16,16 +16,21 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def sample(w=120, h=90):
     img = np.zeros((h, w, 3), np.uint8)
-    img[:, w // 2:] = 255
+    img[:, w // 2 :] = 255
     return img
 
 
 class CoreTests(unittest.TestCase):
     def test_deterministic(self):
-        self.assertEqual(low_poly(sample(), grid_size=15), low_poly(sample(), grid_size=15))
+        self.assertEqual(
+            low_poly(sample(), grid_size=15), low_poly(sample(), grid_size=15)
+        )
 
     def test_seed_changes_output(self):
-        self.assertNotEqual(low_poly(sample(), grid_size=15, seed=1), low_poly(sample(), grid_size=15, seed=2))
+        self.assertNotEqual(
+            low_poly(sample(), grid_size=15, seed=1),
+            low_poly(sample(), grid_size=15, seed=2),
+        )
 
     def test_svg_is_valid_triangles(self):
         root = ET.fromstring(low_poly(sample(), grid_size=15))
@@ -53,7 +58,7 @@ class CoreTests(unittest.TestCase):
         res = generate(sample(), grid_size=15)
         png = res.to_png(scale=2)
         self.assertEqual(png.shape, (180, 240, 3))
-        self.assertLess(png[90, 20].astype(int).sum(), 60)    # left half black
+        self.assertLess(png[90, 20].astype(int).sum(), 60)  # left half black
         self.assertGreater(png[90, 220].astype(int).sum(), 700)  # right half white
 
     def test_mean_mode_runs(self):
@@ -74,8 +79,20 @@ class FileTests(unittest.TestCase):
             main([str(src), str(d / "a.png"), "--grid-size", "30", "--scale", "2"])
             self.assertTrue((d / "a.svg").read_text().startswith("<svg"))
             self.assertTrue((d / "a.png").stat().st_size > 1000)
-            main([str(src.parent), str(d / "batch"), "--grid-size", "40", "--format", "png"])
-            self.assertEqual(len(list((d / "batch").glob("*.png"))), len(list(src.parent.glob("*.[pj]*g"))))
+            main(
+                [
+                    str(src.parent),
+                    str(d / "batch"),
+                    "--grid-size",
+                    "40",
+                    "--format",
+                    "png",
+                ]
+            )
+            self.assertEqual(
+                len(list((d / "batch").glob("*.png"))),
+                len(list(src.parent.glob("*.[pj]*g"))),
+            )
 
     def test_missing_file(self):
         with self.assertRaises(FileNotFoundError):
@@ -110,7 +127,7 @@ class FileTests(unittest.TestCase):
 
     def test_heic_by_content_is_reported_with_a_fix(self):
         with tempfile.TemporaryDirectory() as d:
-            f = Path(d) / "photo.jpg"                      # named .jpg, content is HEIC
+            f = Path(d) / "photo.jpg"  # named .jpg, content is HEIC
             f.write_bytes(b"\x00\x00\x00\x18ftypheic" + b"\x00" * 64)
             with self.assertRaises(ValueError) as cm:
                 render_file(f, Path(d) / "o.svg")
@@ -119,6 +136,7 @@ class FileTests(unittest.TestCase):
 
     def test_extension_can_be_wrong_when_content_is_supported(self):
         import shutil
+
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "really_a_png.jpg"
             shutil.copy(ROOT / "samples" / "inputs" / "cat.png", f)
@@ -128,14 +146,20 @@ class FileTests(unittest.TestCase):
     def test_truncated_jpeg_is_reported_as_damaged(self):
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "cut.jpg"
-            f.write_bytes((ROOT / "samples" / "inputs" / "rocket.jpg").read_bytes()[:200])
+            f.write_bytes(
+                (ROOT / "samples" / "inputs" / "rocket.jpg").read_bytes()[:200]
+            )
             with self.assertRaises(ValueError) as cm:
                 render_file(f, Path(d) / "o.svg")
             self.assertIn("damaged", str(cm.exception))
 
-    @unittest.skipIf(hasattr(__import__("os"), "geteuid") and __import__("os").geteuid() == 0, "root ignores file permissions")
+    @unittest.skipIf(
+        hasattr(__import__("os"), "geteuid") and __import__("os").geteuid() == 0,
+        "root ignores file permissions",
+    )
     def test_permission_denied_message_mentions_macos_fix(self):
         import os
+
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "locked.png"
             f.write_bytes((ROOT / "samples" / "inputs" / "cat.png").read_bytes())
@@ -149,28 +173,43 @@ class FileTests(unittest.TestCase):
 
     def test_cli_errors_are_clean_messages(self):
         with tempfile.TemporaryDirectory() as d:
-            for args in ([str(Path(d) / "missing.png"), str(Path(d) / "o.svg")],
-                         [str(ROOT / "samples" / "inputs" / "cat.png"), str(Path(d) / "o.gif")]):
+            for args in (
+                [str(Path(d) / "missing.png"), str(Path(d) / "o.svg")],
+                [str(ROOT / "samples" / "inputs" / "cat.png"), str(Path(d) / "o.gif")],
+            ):
                 with self.assertRaises(SystemExit) as cm:
                     main(args)
                 self.assertIn("lowpoly: error:", str(cm.exception))
 
     def test_tilde_is_expanded(self):
         import os
+
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "Downloads").mkdir()
             import shutil
-            shutil.copy(ROOT / "samples" / "inputs" / "cat.png", Path(d) / "Downloads" / "my photo.png")
+
+            shutil.copy(
+                ROOT / "samples" / "inputs" / "cat.png",
+                Path(d) / "Downloads" / "my photo.png",
+            )
             old = os.environ.get("HOME")
             os.environ["HOME"] = d
             try:
-                main(["~/Downloads/my photo.png", "~/Downloads/out.png", "--grid-size", "40"])
+                main(
+                    [
+                        "~/Downloads/my photo.png",
+                        "~/Downloads/out.png",
+                        "--grid-size",
+                        "40",
+                    ]
+                )
             finally:
                 os.environ["HOME"] = old
             self.assertTrue((Path(d) / "Downloads" / "out.png").exists())
 
     def test_folder_mode_same_stem_does_not_overwrite(self):
         import shutil
+
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
             (d / "in").mkdir()
@@ -183,14 +222,19 @@ class FileTests(unittest.TestCase):
 class ReliefTests(unittest.TestCase):
     def setUp(self):
         self.img = np.full((90, 120, 3), 128, np.uint8)
-        self.ramp = np.tile(np.linspace(0, 1, 120, dtype=np.float32), (90, 1))  # rises to the right
+        self.ramp = np.tile(
+            np.linspace(0, 1, 120, dtype=np.float32), (90, 1)
+        )  # rises to the right
 
     def mean_shade(self, **kw):
         r = generate(self.img, grid_size=15, relief=20, depth=self.ramp, **kw)
         return r.colors.astype(float).mean() / r.flat_colors.astype(float).mean()
 
     def test_off_by_default_and_identical(self):
-        a, b = generate(self.img, grid_size=15), generate(self.img, grid_size=15, relief=0)
+        a, b = (
+            generate(self.img, grid_size=15),
+            generate(self.img, grid_size=15, relief=0),
+        )
         self.assertTrue((a.colors == b.colors).all())
         self.assertIsNone(a.depth)
 
@@ -200,7 +244,9 @@ class ReliefTests(unittest.TestCase):
         self.assertLess(self.mean_shade(light_angle=90), 0.95)
 
     def test_flat_depth_keeps_colours(self):
-        r = generate(self.img, grid_size=15, relief=20, depth=np.zeros((90, 120), np.float32))
+        r = generate(
+            self.img, grid_size=15, relief=20, depth=np.zeros((90, 120), np.float32)
+        )
         self.assertTrue((r.colors == r.flat_colors).all())
 
     def test_shading_zero_is_no_effect(self):
@@ -216,18 +262,33 @@ class ReliefTests(unittest.TestCase):
     def test_depth_map_file_is_resized(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "depth.png"
-            cv2.imwrite(str(path), (self.ramp[::3, ::3] * 255).astype(np.uint8))   # smaller than the image
+            cv2.imwrite(
+                str(path), (self.ramp[::3, ::3] * 255).astype(np.uint8)
+            )  # smaller than the image
             r = generate(self.img, grid_size=15, relief=20, depth=path, light_angle=270)
             self.assertEqual(r.depth.shape, (90, 120))
-            self.assertGreater(r.colors.astype(float).mean(), r.flat_colors.astype(float).mean())
+            self.assertGreater(
+                r.colors.astype(float).mean(), r.flat_colors.astype(float).mean()
+            )
 
     def test_cli_relief_png_and_flag_checks(self):
         src = ROOT / "samples" / "inputs" / "cat.png"
         with tempfile.TemporaryDirectory() as d:
-            main([str(src), str(Path(d) / "r.png"), "--grid-size", "30", "--relief", "13"])
+            main(
+                [
+                    str(src),
+                    str(Path(d) / "r.png"),
+                    "--grid-size",
+                    "30",
+                    "--relief",
+                    "13",
+                ]
+            )
             self.assertGreater((Path(d) / "r.png").stat().st_size, 1000)
             with self.assertRaises(SystemExit):
-                main([str(src), str(Path(d) / "x.png"), "--depth-map", "nope.png"])  # needs --relief
+                main(
+                    [str(src), str(Path(d) / "x.png"), "--depth-map", "nope.png"]
+                )  # needs --relief
 
     def test_missing_depth_map(self):
         with self.assertRaises(FileNotFoundError):

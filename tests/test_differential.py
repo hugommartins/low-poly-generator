@@ -4,6 +4,7 @@ The oracle is tests/reference/border_uniform_low_poly.py, run in the same enviro
 so OpenCV and SciPy builds are identical on both sides and a byte-for-byte comparison is valid on any
 platform. (A stored golden file would not be: its bytes depend on the build that made it.)
 """
+
 import sys
 import tempfile
 import unittest
@@ -35,7 +36,11 @@ class DifferentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             expected = reference_svg(path, grid, jitter, tmp)
         actual = low_poly(load_image(path), grid_size=grid, jitter=jitter)
-        self.assertEqual(actual.count("<polygon"), expected.count("<polygon"), "triangle count differs")
+        self.assertEqual(
+            actual.count("<polygon"),
+            expected.count("<polygon"),
+            "triangle count differs",
+        )
         self.assertEqual(actual, expected)
 
     def test_samples_match_the_original_script(self):
@@ -62,7 +67,9 @@ class DifferentialTests(unittest.TestCase):
         path = SAMPLES[0]
         with tempfile.TemporaryDirectory() as tmp:
             expected = reference_svg(path, 10, 12, tmp)
-        self.assertNotEqual(low_poly(load_image(path), grid_size=10, jitter=11), expected)
+        self.assertNotEqual(
+            low_poly(load_image(path), grid_size=10, jitter=11), expected
+        )
 
 
 if __name__ == "__main__":
