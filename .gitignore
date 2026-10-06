@@ -5,3 +5,7 @@ build/
 dist/
 .DS_Store
 .hypothesis/
+.coverage
+coverage.xml
+mutation-report.txt
+.mutmut-cache
