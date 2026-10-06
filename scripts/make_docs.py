@@ -39,7 +39,7 @@ def panels(items, path, cols=None, cell=3.6, title_size=11):
         ax.axis("off")
     for ax, it in zip(axes.ravel(), items):
         title, im = it[0], it[1]
-        ax.imshow(im if im.ndim == 3 else im, cmap="gray", vmin=0, vmax=255)
+        ax.imshow(im, cmap="gray", vmin=0, vmax=255)
         ax.set_title(title, fontsize=title_size, pad=6)
         if len(it) > 2:
             ax.text(0.5, -0.04, it[2], transform=ax.transAxes, ha="center", va="top", fontsize=9, color=MUTE)
@@ -133,12 +133,12 @@ def fig_hysteresis():
     ax.axhline(200, color="#1f7a8c", lw=1.4)
     ax.text(59.5, 205, "high = 200", ha="right", color="#1f7a8c", fontsize=10)
     ax.text(59.5, 105, "low = 100", ha="right", color="#d97b29", fontsize=10)
-    ax.annotate("kept: above high", (24, 230), (30, 262), arrowprops=dict(arrowstyle="->", color=INK), fontsize=10)
+    ax.annotate("kept: above high", (24, 230), (30, 262), arrowprops={"arrowstyle": "->", "color": INK}, fontsize=10)
     ax.annotate("kept: above low and\nconnected to a strong pixel", (26, 140), (31, 148), fontsize=9, color=INK,
-                arrowprops=dict(arrowstyle="->", color=INK))
+                arrowprops={"arrowstyle": "->", "color": INK})
     ax.annotate("dropped: above low but\nnot connected to a strong one", (9, 150), (0.5, 205), fontsize=9,
-                arrowprops=dict(arrowstyle="->", color=INK))
-    ax.annotate("dropped: below low", (50, 62), (43, 20), fontsize=9, arrowprops=dict(arrowstyle="->", color=INK))
+                arrowprops={"arrowstyle": "->", "color": INK})
+    ax.annotate("dropped: below low", (50, 62), (43, 20), fontsize=9, arrowprops={"arrowstyle": "->", "color": INK})
     ax.set_ylim(0, 290)
     ax.set_xlabel("pixels along a line across the image")
     ax.set_ylabel("edge strength (after thinning)")

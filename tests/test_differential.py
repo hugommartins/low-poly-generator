@@ -18,7 +18,7 @@ from lowpoly.core import load_image
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE / "reference"))
-from border_uniform_low_poly import border_uniform_low_poly  # noqa: E402
+from border_uniform_low_poly import border_uniform_low_poly
 
 SAMPLES = sorted((ROOT / "samples" / "inputs").glob("*.[jp][pn]g"))
 SETTINGS = [(10, 12), (25, 12), (18, 6), (30, 20)]  # (grid_size, jitter_range)

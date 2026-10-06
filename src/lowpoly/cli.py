@@ -36,9 +36,19 @@ def build_parser():
 
 def main(argv=None):
     a = build_parser().parse_args(argv)
-    params = dict(grid_size=a.grid_size, jitter=a.jitter, saturation=a.saturation, seed=a.seed,
-                  color_mode=a.color_mode, canny_low=a.canny_low, canny_high=a.canny_high,
-                  relief=a.relief, light_angle=a.light_angle, light_elevation=a.light_elevation, shading=a.shading)
+    params = {
+        "grid_size": a.grid_size,
+        "jitter": a.jitter,
+        "saturation": a.saturation,
+        "seed": a.seed,
+        "color_mode": a.color_mode,
+        "canny_low": a.canny_low,
+        "canny_high": a.canny_high,
+        "relief": a.relief,
+        "light_angle": a.light_angle,
+        "light_elevation": a.light_elevation,
+        "shading": a.shading,
+    }
     if a.relief <= 0 and a.depth_map:
         raise SystemExit("--depth-map needs --relief greater than 0")
     src, dst = Path(a.input).expanduser(), Path(a.output).expanduser()

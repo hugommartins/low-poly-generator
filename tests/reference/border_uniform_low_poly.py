@@ -5,6 +5,8 @@ Only the "Execution" block at the bottom of the author's file was removed. Do no
 import cv2
 import numpy as np
 from scipy.spatial import Delaunay
+
+
 def border_uniform_low_poly(
     image_path, 
     svg_output_path, 
