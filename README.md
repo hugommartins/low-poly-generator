@@ -4,21 +4,23 @@
 
 Turn a photo into a low-poly image made of flat-coloured triangles, written as an **SVG** (scalable, one `<polygon>` per triangle) or a **PNG**. An optional **relief mode** lights the triangles as if they had height, so the flat image looks 3D.
 
-![CI](https://img.shields.io/github/actions/workflow/status/hugommartins/low-poly-generator/ci.yml?branch=main&style=flat-square&logo=github) ![Coverage](docs/images/coverage.svg)
+![CI](https://img.shields.io/github/actions/workflow/status/hugommartins/low-poly-generator/.github/workflows/ci.yml?branch=main&style=flat-square&logo=github) ![Coverage](docs/images/coverage.svg)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white)
 ![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
 
-</div>
 
 ![Portrait: original, sparse and dense output](docs/images/sample_portrait.png)
 
-- [Install](#install) · [Quick start](#quick-start) · [Options](#options) · [Python API](#python-api)
-- [How it works](#how-it-works) 
-- [3D relief](#3d-relief-the-illusion-of-depth) (optional lighting that makes the image _hopefully_ look 3D)
-- [Tuning guide](#tuning-guide) · [Samples](#samples) · [Limitations](#limitations)
+[Install](#install) · [Quick start](#quick-start) · [Options](#options) · [Python API](#python-api)
+
+[How it works](#how-it-works) 
+
+[Tuning guide](#tuning-guide) · [Samples](#samples) · [Limitations](#limitations)
+
+</div>
 
 ## Install
 
