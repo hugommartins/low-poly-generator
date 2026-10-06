@@ -39,7 +39,7 @@ jobs:
       - run: pip install -e ".[docs]"
       - run: python scripts/make_docs.py
       - name: Keep the generated figures for inspection
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: generated-docs
           path: |
@@ -61,7 +61,7 @@ jobs:
         run: mutmut run --paths-to-mutate src/lowpoly/core.py --runner "python -m unittest discover -s tests" || true
       - name: Report which mutants survived
         run: mutmut results | tee mutation-report.txt || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mutation-report
           path: mutation-report.txt
