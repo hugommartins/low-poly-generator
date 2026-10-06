@@ -69,7 +69,6 @@ class CoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             generate(sample(), color_mode="nope")
 
-
 class FileTests(unittest.TestCase):
     def test_cli_svg_png_and_folder(self):
         src = ROOT / "samples" / "inputs" / "cat.png"
@@ -293,7 +292,6 @@ class ReliefTests(unittest.TestCase):
     def test_missing_depth_map(self):
         with self.assertRaises(FileNotFoundError):
             generate(self.img, relief=10, depth="missing.png")
-
 
 if __name__ == "__main__":
     unittest.main()
