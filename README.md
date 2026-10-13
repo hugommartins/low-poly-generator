@@ -7,15 +7,12 @@ Turn a photo into a low-poly image made of flat-coloured triangles, written as a
 ![CI](https://img.shields.io/github/actions/workflow/status/hugommartins/low-poly-generator/ci.yml?branch=main&style=flat-square&logo=github) ![Coverage](docs/images/coverage.svg)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
-![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white)
-![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white)
-![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white) ![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=flat-square&logo=scipy&logoColor=white) ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
 
 ![Portrait: original, sparse and dense output](docs/images/sample_portrait.png)
 
-[Install](#install) · [Quick start](#quick-start) · [Options](#options)<br>
-[How it works](#how-it-works)<br>
-[Samples](#samples) · [Limitations](#limitations) · [Roadmap](#roadmap)
+
+[Install](#install) · [Quick start](#quick-start) · [Options](#options)<br>[How it works](#how-it-works)<br>[Samples](#samples) · [Limitations](#limitations) · [Roadmap](#roadmap)
 
 </div>
 

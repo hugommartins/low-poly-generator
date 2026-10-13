@@ -6,12 +6,12 @@ How `low-poly-generator` is tested, why, and what is not covered yet. Defects fo
 
 | Area | State |
 |---|---|
-| Automated suite | 64 tests with Hypothesis installed (30 example-based, 21 property-based, 10 metamorphic, 3 differential), all `unittest`. |
-| Coverage | Not measured yet. CI reports it; set a minimum after the first run |
+| Automated suite | 67 tests in the current repo, all `unittest`/`pytest`-run checks with Hypothesis installed. |
+| Coverage | Reported by the local CI run (`coverage.xml` is generated in the repo root). |
 | Property-based tests | 21 tests in `tests/test_properties.py` (Hypothesis), 3 of them expected failures for BUG-010 to BUG-012. |
-| Metamorphic tests | 10 tests in `tests/test_metamorphic.py` (Hypothesis): 6 exact relations, 4 with stated tolerances. Only run against a stand-in so far; not yet run with the real package |
-| Differential test against the original script | `tests/test_differential.py`, 3 tests: 4 photos x 4 settings plus odd-sized images, byte-for-byte |
-| CI | Written, not yet run on GitHub |
+| Metamorphic tests | 10 tests in `tests/test_metamorphic.py` (Hypothesis): 6 exact relations, 4 with stated tolerances. |
+| Differential test against the original script | `tests/test_differential.py`, 3 tests: 4 photos x 4 settings plus odd-sized images, byte-for-byte. |
+| CI | Present in [.github/workflows/ci.yml](../.github/workflows/ci.yml); the suite is exercised by the project workflow. |
 
 ## 1. Scope
 

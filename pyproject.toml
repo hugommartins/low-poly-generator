@@ -12,7 +12,7 @@ dependencies = ["numpy", "opencv-python", "scipy"]
 
 [project.optional-dependencies]
 docs = ["matplotlib"]
-test = ["hypothesis", "coverage"]
+test = ["hypothesis", "coverage", "scikit-image"]
 
 [project.scripts]
 lowpoly = "lowpoly.cli:main"
