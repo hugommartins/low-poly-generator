@@ -33,7 +33,8 @@ class ComparisonTests(unittest.TestCase):
         return {"a": {"s": {"ssim": ssim, "psnr": psnr, "triangles": 400}}}
 
     def test_a_score_inside_the_tolerance_passes(self):
-        self.assertEqual(qs.compare(self.stored, self.measured(0.505, 20.2)), [])
+        inside = self.measured(0.50 + qs.SSIM_TOL / 2, 20.0 - qs.PSNR_TOL_DB / 2)
+        self.assertEqual(qs.compare(self.stored, inside), [])
 
     def test_a_drop_beyond_the_tolerance_is_found(self):
         self.assertEqual(

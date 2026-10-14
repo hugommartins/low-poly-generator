@@ -84,7 +84,6 @@ jobs:
           # Quality baseline: report only. The spread across legs is measured (at most 0.0007 SSIM and 0.02 dB,
           # docs/BASELINE_REPORT.md). After lowering the tolerance in tests/quality_support.py, remove the next line
           # so a drift fails the build.
-          LOWPOLY_QUALITY_MODE: report
           LOWPOLY_QUALITY_OUT: quality-scores.json
         run: |
           coverage run --branch --source=src -m unittest discover -s tests -v
