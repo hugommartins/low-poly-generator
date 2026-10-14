@@ -302,6 +302,7 @@ This roadmap focuses on resolving known limitations and expanding the core capab
 - [ ] **Mitigate relief artefacts (BUG-009):** Implement point placement directly along depth edges to prevent triangles from straddling sudden depth steps, reducing dark/bright spikes in relief mode.
 - [ ] **Optimize `mean` color mode:** Accelerate the mask-and-fill operations used for averaging triangle colors to reduce the performance gap with `centroid` mode on dense meshes.
 - [ ] **Improved edge fidelity:** Modify the point selection algorithm to better preserve continuous lines, preventing triangle sides from cutting across thin or diagonal outlines.
+- [ ] Improve triangle edges when colors are light
 
 ### Phase 2: Algorithmic Enhancements
 
