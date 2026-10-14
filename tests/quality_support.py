@@ -17,8 +17,8 @@ MAX_SIZE = 450  # long side the sample photos are loaded at
 SETTINGS = {"default": {}, "grid16": {"grid_size": 16}}  # name -> generate() arguments
 
 # Largest score change treated as noise. Taken from the study's seed noise (SSIM sd 0.002 to 0.006,
-# PSNR sd 0.1 to 0.3 dB). A run with the seed fixed is repeatable, so the real spread is smaller; it is
-# unmeasured across platforms. Lower these once the CI spread is known.
+# PSNR sd 0.1 to 0.3 dB). A run with the seed fixed is repeatable. Measured across CI platforms (Linux, Windows,
+# macOS on Apple silicon) the spread is at most 0.0007 SSIM and 0.02 dB (docs/BASELINE_REPORT.md), so these have headroom.
 SSIM_TOL = 0.01
 PSNR_TOL_DB = 0.3
 

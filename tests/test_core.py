@@ -1,7 +1,9 @@
+import os
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest import mock
 
 import cv2
 import numpy as np
@@ -158,18 +160,14 @@ class FileTests(unittest.TestCase):
         "root ignores file permissions",
     )
     def test_permission_denied_message_mentions_macos_fix(self):
-        import os
 
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "locked.png"
             f.write_bytes((ROOT / "samples" / "inputs" / "cat.png").read_bytes())
-            os.chmod(f, 0)
-            try:
+            with mock.patch.object(Path, "read_bytes", side_effect=PermissionError):
                 with self.assertRaises(OSError) as cm:
                     render_file(f, Path(d) / "o.svg")
-                self.assertIn("Privacy & Security", str(cm.exception))
-            finally:
-                os.chmod(f, 0o644)
+            self.assertIn("Privacy & Security", str(cm.exception))
 
     def test_cli_errors_are_clean_messages(self):
         with tempfile.TemporaryDirectory() as d:
@@ -182,19 +180,16 @@ class FileTests(unittest.TestCase):
                 self.assertIn("lowpoly: error:", str(cm.exception))
 
     def test_tilde_is_expanded(self):
-        import os
+        import shutil
 
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "Downloads").mkdir()
-            import shutil
-
             shutil.copy(
                 ROOT / "samples" / "inputs" / "cat.png",
                 Path(d) / "Downloads" / "my photo.png",
             )
-            old = os.environ.get("HOME")
-            os.environ["HOME"] = d
-            try:
+            # expanduser reads HOME on macOS and Linux, USERPROFILE on Windows
+            with mock.patch.dict(os.environ, {"HOME": d, "USERPROFILE": d}):
                 main(
                     [
                         "~/Downloads/my photo.png",
@@ -203,8 +198,6 @@ class FileTests(unittest.TestCase):
                         "40",
                     ]
                 )
-            finally:
-                os.environ["HOME"] = old
             self.assertTrue((Path(d) / "Downloads" / "out.png").exists())
 
     def test_folder_mode_same_stem_does_not_overwrite(self):
