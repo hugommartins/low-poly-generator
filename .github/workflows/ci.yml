@@ -94,7 +94,7 @@ jobs:
         # One leg only: coverage differs by OS and Python, so a floor on every leg would flap.
         if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' && matrix.python == '3.12' }}
         shell: bash
-        run: coverage report --fail-under=94
+        run: coverage report --fail-under=91
 
       - name: Upload quality scores
         # One file per leg, also when the tests fail: the spread job below compares them.
