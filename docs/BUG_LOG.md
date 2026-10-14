@@ -11,13 +11,13 @@ Defects found while building and using `lowpoly`: symptom, root cause, fix and t
 |---|---:|---:|---:|
 | High | 0 | 3 | 3 |
 | Medium | 0 | 6 | 6 |
-| Low | 1 | 2 | 3 |
-| **All** | **1** | **11** | **12** |
+| Low | 0 | 3 | 3 |
+| **All** | **0** | **12** | **12** |
 
 
 | Suite | Tests |
 |---|---|
-| Example-based | 33  |
+| Example-based | 36  |
 | Differential | 3 |
 | Property (Hypothesis) | 21 |
 
@@ -39,7 +39,7 @@ Defects found while building and using `lowpoly`: symptom, root cause, fix and t
 | [BUG-006](#bug-006) | Raw tracebacks shown for expected errors | Medium | Fixed |  2026 -10-03|
 | [BUG-007](#bug-007) | Relief colours truncated instead of rounded | Medium | Fixed | 2026 -10-03|
 | [BUG-008](#bug-008) | Coverage test crashed under NumPy 2 | Low | Fixed | 2026 -10-03|
-| [BUG-009](#bug-009) | Relief mode leaves dark and bright spikes at depth steps | Low | **Open** | 2026 -10-03|
+| [BUG-009](#bug-009) | Relief mode leaves dark and bright spikes at depth steps | Low | Fixed | 2026 -10-03|
 | [BUG-010](#bug-010) | PNG and SVG leave a one-pixel strip on the right and bottom edges | Medium | Fixed | 2026 -10-03|
 | [BUG-011](#bug-011) | One-pixel-wide or tall image raises a raw `QhullError` | Low | Fixed | 2026 -10-03|
 | [BUG-012](#bug-012) | Mean colour mode truncates instead of rounding | Medium | Fixed | 2026 -10-03|
@@ -47,16 +47,7 @@ Defects found while building and using `lowpoly`: symptom, root cause, fix and t
 
 ## Open
 
-<a id="bug-009"></a>
-
-### BUG-009: Relief spikes at depth steps
-
-**Low** · Open, mitigated · Found by: visual inspection
-
-- **Symptom:** Dark and bright spikes where the depth map has a sharp step, for example the figure `relief_dome`.
-- **Root cause:** Large height differences between neighbouring vertices give near-vertical facet normals.
-- **Mitigation:** Tilt is capped at 60 degrees. The spikes are reduced, not removed.
-- **Suggested guard:** An `xfail(strict=True)` test on a stepped depth map, so the defect is on record and the suite fails loudly if someone fixes it without updating the test.
+None.
 
 
 ## Fixed
@@ -174,6 +165,22 @@ Defects found while building and using `lowpoly`: symptom, root cause, fix and t
 - **Fix:** Explicit 2D determinant in the test.
 - **Guard:** `test_triangles_cover_frame` (also checks that triangle areas sum to the image area).
 - **Lesson:** Run the suite on NumPy 1 and 2 in CI.
+
+<a id="bug-009"></a>
+
+### BUG-009: Relief spikes at depth steps
+
+**Low** · Fixed 2026-10-14 · Found by: visual inspection
+
+- **Symptom:** Dark and bright spikes where the depth map has a sharp step, for example the figure `relief_dome`.
+- **Root cause:** Heights are read at a triangle's three corners. A triangle that straddles a step has corners on two levels, so its plane tilts steeply across what is really a cliff and is lit as a steep facet. On a flat scene with one step, those triangles came out at 0.49 to 1.09 times their colour while every neighbour kept 1.00.
+- **Earlier mitigation:** Tilt capped at 60 degrees. It reduced the spikes and did not remove them.
+- **Fix:** `relief_colors` compares the depth at a triangle's centre with the mean depth at its corners. On a smooth surface they agree; across a step they do not. A difference above `max_step` (0.15 of the depth range) marks the triangle as straddling a step, and it is lit as facing the viewer, which leaves its colour unchanged. The 60 degree cap stays for steep slopes.
+- **Effect on the default depth:** on the four sample photos at grid 25 and 12, 1 to 10% of triangles lose their lighting (portrait 10% at grid 25). They sit on sharp brightness edges, where the spikes were.
+- **Guard:**
+  - `test_triangles_straddling_a_step_keep_their_colour`
+  - `test_triangles_away_from_the_step_are_unchanged`
+  - `test_a_smooth_slope_is_still_shaded` (the rule must not switch relief off on gradual depth)
 
 <a id="bug-010"></a>
 

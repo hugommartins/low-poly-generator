@@ -9,7 +9,7 @@ from scipy.spatial import Delaunay
 
 from lowpoly import generate, low_poly, render_file
 from lowpoly.cli import main
-from lowpoly.core import detect_edges, place_points, triangle_colors
+from lowpoly.core import detect_edges, place_points, relief_colors, triangle_colors
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -314,6 +314,62 @@ class ReliefTests(unittest.TestCase):
         out = triangle_colors(pts, np.array([[0, 1, 2]]), img, mode="mean")
         self.assertEqual(out.tolist(), [[101, 101, 101]])
 
+ROUNDING = 1  # colours are whole numbers; equal results can differ by one level
+H, W, STEP_X = 120, 160, 80
 
-if __name__ == "__main__":
-    unittest.main()
+
+def flat_scene(grid, seed):
+    img = np.full((H, W, 3), 128, np.uint8)
+    return generate(img, grid_size=grid, jitter=max(1, grid // 2), seed=seed)
+
+
+def step_depth():
+    d = np.zeros((H, W), np.float32)
+    d[:, STEP_X:] = 1.0
+    return d
+
+
+class ReliefStepTests(unittest.TestCase):
+    def test_triangles_straddling_a_step_keep_their_colour(self):
+        depth = step_depth()
+        for grid in (8, 10, 14, 20):
+            for seed in range(5):
+                for angle in (45, 135, 225, 315):
+                    res = flat_scene(grid, seed)
+                    lit = relief_colors(
+                        res.points, res.simplices, res.colors, depth, 13, angle, 55
+                    )
+                    corners = res.points[res.simplices]
+                    corner_depth = depth[corners[:, :, 1], corners[:, :, 0]]
+                    straddling = corner_depth.min(axis=1) != corner_depth.max(axis=1)
+                    self.assertTrue(straddling.any(), "the scene should have triangles across the step")
+                    change = np.abs(lit.astype(int) - res.colors.astype(int)).max(axis=1)
+                    self.assertLessEqual(
+                        int(change[straddling].max()),
+                        ROUNDING,
+                        f"grid {grid}, seed {seed}, light {angle}",
+                    )
+
+    def test_triangles_away_from_the_step_are_unchanged(self):
+        # Both plateaus are flat, so every triangle with all corners on one level faces the viewer.
+        depth = step_depth()
+        res = flat_scene(10, 1)
+        lit = relief_colors(res.points, res.simplices, res.colors, depth, 13, 315, 55)
+        corners = res.points[res.simplices]
+        corner_depth = depth[corners[:, :, 1], corners[:, :, 0]]
+        same_level = corner_depth.min(axis=1) == corner_depth.max(axis=1)
+        self.assertTrue(np.array_equal(lit[same_level], res.colors[same_level]))
+
+    def test_a_smooth_slope_is_still_shaded(self):
+        # The step rule must not switch relief off on gradual depth.
+        ramp = np.tile(np.linspace(0, 1, W, dtype=np.float32), (H, 1))
+        res = flat_scene(10, 1)
+        lit_left = relief_colors(
+            res.points, res.simplices, res.colors, ramp, 40, 270, 55
+        )
+        lit_right = relief_colors(
+            res.points, res.simplices, res.colors, ramp, 40, 90, 55
+        )
+        # Depth rises to the right, so facets face left: light from the left brightens them, from the right darkens.
+        self.assertGreater(int(lit_left.min()), 128)
+        self.assertLess(int(lit_right.max()), 128)

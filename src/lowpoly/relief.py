@@ -51,6 +51,7 @@ def relief_colors(
     shading=1.0,
     ambient=0.45,
     max_tilt=60.0,
+    max_step=0.15,
 ):
     """Shade each triangle by how it tilts toward a light, using heights taken from `depth` at its corners.
 
@@ -58,7 +59,8 @@ def relief_colors(
     light_angle:     compass degrees the light comes from (0 = top, 90 = right, 315 = top left)
     light_elevation: degrees above the image plane (90 = straight on, low = raking light)
     shading:         0 = no effect, 1 = full, above 1 exaggerates
-    max_tilt:        steepest facet angle in degrees; limits streaks at sudden depth steps
+    max_tilt:        steepest facet angle in degrees; limits streaks on very steep slopes
+    max_step:        maximum centre-to-corner-mean depth difference before a facet is left unlit
     """
     h, w = depth.shape
     z = depth[pts[:, 1], pts[:, 0]] * (relief / 100.0) * max(h, w)
@@ -69,8 +71,11 @@ def relief_colors(
     n = np.cross(b - a, c - a)
     n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
     n[n[:, 2] < 0] *= -1  # normals face the viewer
-    # Long thin triangles that straddle a sudden depth step would tilt almost edge-on and flash black or white.
-    # Capping the tilt keeps them from dominating the image.
+    corners = pts[simplices]
+    cx, cy = np.rint(corners.mean(axis=1)).astype(int).T
+    mean_corner = depth[corners[:, :, 1], corners[:, :, 0]].mean(axis=1)
+    n[np.abs(depth[cy, cx] - mean_corner) > max_step] = (0.0, 0.0, 1.0)
+    # Very steep slopes would tilt almost edge-on and flash black or white; capping the tilt keeps them in check.
     sin_max, cos_max = np.sin(np.radians(max_tilt)), np.cos(np.radians(max_tilt))
     xy = np.hypot(n[:, 0], n[:, 1])
     over = xy > sin_max
