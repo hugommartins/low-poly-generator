@@ -7,10 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
-# A newer push to the same branch cancels the run in progress.
+# A newer push to the same pull request cancels the run in progress. Pushes to main always run to completion.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -23,13 +23,16 @@ jobs:
     # Advisory until the code base has been run through ruff once. Remove the next line to make it a gate.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4 # pin to SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5 # pin to SHA
         with:
           python-version: "3.12"
       - run: pip install ruff
       - run: ruff check src tests scripts
       - run: ruff format --check src tests scripts
+        if: ${{ !cancelled() }}
 
   test:
     name: Test (${{ matrix.os }}, py${{ matrix.python }}, ${{ matrix.deps }})
@@ -46,13 +49,16 @@ jobs:
           - { os: ubuntu-latest, python: "3.10", deps: "current" }
           - { os: ubuntu-latest, python: "3.12", deps: "current" }
           - { os: ubuntu-latest, python: "3.13", deps: "current" }
+          - { os: ubuntu-latest, python: "3.14", deps: "current" }
           # Other operating systems on one Python. Intel macOS matters because the project's author uses one.
           - { os: macos-latest, python: "3.12", deps: "current" } # Apple silicon
-          - { os: macos-15-intel, python: "3.12", deps: "current" } # Intel; GitHub supports this label until fall 2027
+          - { os: macos-15-intel, python: "3.12", deps: "current" } # Intel; check GitHub's retirement date for this label
           - { os: windows-latest, python: "3.12", deps: "current" }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4 # pin to SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5 # pin to SHA
         with:
           python-version: ${{ matrix.python }}
           cache: pip
@@ -71,10 +77,13 @@ jobs:
         run: python -c "import sys, numpy, cv2, scipy; print(sys.version); print('numpy', numpy.__version__, 'opencv', cv2.__version__, 'scipy', scipy.__version__)"
 
       - name: Run tests with coverage
+        # bash on every OS: the default PowerShell on Windows would report only the last command's exit code.
+        shell: bash
         env:
           HYPOTHESIS_PROFILE: ci # 100 fixed examples per property, same result on every run
-          # Quality baseline: report only until the score spread across these legs is known
-          # (docs/BASELINE_REPORT.md). Then remove the next line so a drift fails the build.
+          # Quality baseline: report only. The spread across legs is measured (at most 0.0007 SSIM and 0.02 dB,
+          # docs/BASELINE_REPORT.md). After lowering the tolerance in tests/quality_support.py, remove the next line
+          # so a drift fails the build.
           LOWPOLY_QUALITY_MODE: report
           LOWPOLY_QUALITY_OUT: quality-scores.json
         run: |
@@ -84,26 +93,47 @@ jobs:
         # Coverage is reported, not gated, until a baseline exists. Then add: --fail-under=<baseline>
 
       - name: Upload quality scores
-        # One file per leg: compare them to measure the spread across platforms and versions.
-        uses: actions/upload-artifact@v4
+        # One file per leg, also when the tests fail: the spread job below compares them.
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4 # pin to SHA
         with:
           name: quality-scores-${{ matrix.os }}-py${{ matrix.python }}-${{ matrix.deps }}
           path: quality-scores.json
+          if-no-files-found: warn
 
       - name: Upload coverage report
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 # pin to SHA
         with:
           name: coverage-xml
           path: coverage.xml
+
+  spread:
+    name: Quality score spread
+    needs: test
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4 # pin to SHA
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4 # pin to SHA
+        with:
+          pattern: quality-scores-*
+          path: scores
+      - name: Compare the scores of all legs
+        run: python scripts/quality_spread.py scores >> "$GITHUB_STEP_SUMMARY"
 
   package:
     name: Build and smoke test the package
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4 # pin to SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5 # pin to SHA
         with:
           python-version: "3.12"
       - name: Build sdist and wheel
@@ -133,9 +163,26 @@ jobs:
     timeout-minutes: 5
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v4 # pin to SHA
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5 # pin to SHA
         with:
           python-version: "3.12"
       - run: pip install pip-audit
-      - run: pip-audit -r requirements.txt
+      - run: pip-audit .
+
+  required:
+    # The only check branch protection needs: add legs or jobs above without touching settings.
+    # Lint, audit and spread are advisory and stay out of the gate.
+    name: Required checks
+    if: ${{ always() }}
+    needs: [test, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "A required job did not pass" >&2
+          exit 1
