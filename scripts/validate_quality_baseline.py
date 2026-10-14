@@ -1,16 +1,20 @@
 """Check that the quality baseline catches real faults and ignores harmless changes.
 
-Each mutant is a copy of the package with one change to core.py. For every mutant the script records
+Each mutant is a copy of the package with one change to the source under src/lowpoly/. Each text edit is applied to
+the one module that contains the text (a parameter-default edit, to every place the default is written), so it works whether the pipeline sits in one file or several. For every
+mutant the script records
 - whether the existing tests (without the baseline test) fail, split into the differential test and the rest;
 - how far the sample scores move from tests/quality_baseline.json and whether the baseline would fail.
 
-Usage: python scripts/validate_quality_baseline.py [--markdown] [--json FILE]
-Needs scikit-image. Takes about a minute. Writes nothing into the project.
+Usage: python scripts/validate_quality_baseline.py [--check] [--markdown] [--json FILE]
+  --check   only verify that every edit applies to the current source, then stop (seconds)
+Needs scikit-image. A full run takes several minutes. Writes nothing into the project.
 """
 
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +24,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
 import quality_support as qs  # noqa: E402
+
+
+def default(name, old, new):
+    """Edit that changes a parameter default wherever it is written (`name=100`, `name: int = 100`)."""
+    return re.compile(rf"(\b{name}\s*(?::[^=,)\n]+)?=\s*){old}\b"), rf"\g<1>{new}"
+
 
 CENTROID_RETURN = "return img[c[:, 1], c[:, 0]][:, ::-1]"
 CENTROID_CLIP = "c = np.clip(tris.mean(axis=1).astype(int), [0, 0], [w - 1, h - 1])"
@@ -78,12 +88,7 @@ MUTANTS = {
     "canny_10_20": (
         "fault",
         "default Canny thresholds changed to 10/20",
-        [
-            (
-                "canny_low=100, canny_high=200, relief=0.0",
-                "canny_low=10, canny_high=20, relief=0.0",
-            )
-        ],
+        [default("canny_low", 100, 10), default("canny_high", 200, 20)],
     ),
     "half_density": (
         "fault",
@@ -105,11 +110,7 @@ MUTANTS = {
         "saturation option ignored (always 1.0)",
         [("hsv[:, :, 1] * saturation", "hsv[:, :, 1] * 1.0")],
     ),
-    "seed_7": (
-        "harmless",
-        "default seed 42 changed to 7",
-        [("saturation=1.3, seed=42, color_mode", "saturation=1.3, seed=7, color_mode")],
-    ),
+    "seed_7": ("harmless", "default seed 42 changed to 7", [default("seed", 42, 7)]),
     "bilateral_window_7": (
         "harmless",
         "bilateral window 9 changed to 7",
@@ -151,6 +152,29 @@ for n in (5, 15, 30):
     )
 
 
+def apply_edits(package_dir, edits):
+    """Apply each (old, new) to the single module under package_dir that contains `old`. Raises ValueError otherwise."""
+    modules = sorted(package_dir.glob("*.py"))
+    for old, new in edits:
+        if isinstance(
+            old, re.Pattern
+        ):  # every match in every module; at least one must exist
+            total = 0
+            for m in modules:
+                text, n = old.subn(new, m.read_text())
+                if n:
+                    m.write_text(text)
+                total += n
+            if not total:
+                raise ValueError(f"edit does not apply (no match): {old.pattern!r}")
+            continue
+        hits = [m for m in modules if old in m.read_text()]
+        if len(hits) != 1:
+            where = ", ".join(m.name for m in hits) or "no module"
+            raise ValueError(f"edit does not apply (found in {where}): {old!r}")
+        hits[0].write_text(hits[0].read_text().replace(old, new))
+
+
 def build(workdir, edits):
     for sub in ("src", "tests", "samples"):
         shutil.copytree(
@@ -159,12 +183,25 @@ def build(workdir, edits):
     (
         workdir / "tests" / "test_quality_baseline.py"
     ).unlink()  # the baseline test is measured separately
-    core = workdir / "src" / "lowpoly" / "core.py"
-    text = core.read_text()
-    for old, new in edits:
-        assert old in text, f"edit does not apply: {old!r}"
-        text = text.replace(old, new)
-    core.write_text(text)
+    apply_edits(workdir / "src" / "lowpoly", edits)
+
+
+def check_edits():
+    """Dry run of every mutant's edits on a copy of the source. Returns {name: error} for the ones that fail."""
+    bad = {}
+    for name, (_, _, edits) in MUTANTS.items():
+        with tempfile.TemporaryDirectory() as tmp:
+            pkg = Path(tmp) / "lowpoly"
+            shutil.copytree(
+                ROOT / "src" / "lowpoly",
+                pkg,
+                ignore=shutil.ignore_patterns("__pycache__"),
+            )
+            try:
+                apply_edits(pkg, edits)
+            except ValueError as e:
+                bad[name] = str(e)
+    return bad
 
 
 def existing_tests(workdir):
@@ -264,9 +301,22 @@ def markdown(results):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--check", action="store_true", help="only verify that every edit applies"
+    )
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--json")
     args = ap.parse_args()
+    bad = check_edits()
+    for name, msg in bad.items():
+        print(f"{name}: {msg}", file=sys.stderr)
+    if bad:
+        sys.exit(
+            f"{len(bad)} of {len(MUTANTS)} changes no longer apply to the source; update their (old, new) text first"
+        )
+    print(f"all {len(MUTANTS)} changes apply", file=sys.stderr)
+    if args.check:
+        return
     stored = qs.load_baseline()["scores"]
     results = {}
     for name, (_, desc, edits) in MUTANTS.items():

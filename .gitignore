@@ -11,3 +11,5 @@ mutation-report.txt
 .mutmut-cache
 .ruff_cache/
 .vscode/
+validation.json
+validation.md

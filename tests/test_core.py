@@ -314,6 +314,7 @@ class ReliefTests(unittest.TestCase):
         out = triangle_colors(pts, np.array([[0, 1, 2]]), img, mode="mean")
         self.assertEqual(out.tolist(), [[101, 101, 101]])
 
+
 ROUNDING = 1  # colours are whole numbers; equal results can differ by one level
 H, W, STEP_X = 120, 160, 80
 
@@ -342,8 +343,13 @@ class ReliefStepTests(unittest.TestCase):
                     corners = res.points[res.simplices]
                     corner_depth = depth[corners[:, :, 1], corners[:, :, 0]]
                     straddling = corner_depth.min(axis=1) != corner_depth.max(axis=1)
-                    self.assertTrue(straddling.any(), "the scene should have triangles across the step")
-                    change = np.abs(lit.astype(int) - res.colors.astype(int)).max(axis=1)
+                    self.assertTrue(
+                        straddling.any(),
+                        "the scene should have triangles across the step",
+                    )
+                    change = np.abs(lit.astype(int) - res.colors.astype(int)).max(
+                        axis=1
+                    )
                     self.assertLessEqual(
                         int(change[straddling].max()),
                         ROUNDING,

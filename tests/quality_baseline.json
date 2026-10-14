@@ -1,6 +1,6 @@
 {
  "about": "Similarity of the sample photos' output to the photo, at the default seed. See docs/BASELINE_REPORT.md.",
- "created": "2026-10-13",
+ "created": "2026-10-14",
  "tolerance": {
   "ssim": 0.01,
   "psnr_db": 0.3
@@ -13,8 +13,8 @@
   }
  },
  "environment": {
-  "python": "3.13.16",
-  "platform": "Linux-6.18.44-fc-v114-x86_64-with-glibc2.39",
+  "python": "3.14.7",
+  "platform": "macOS-15.7-x86_64-i386-64bit-Mach-O",
   "numpy": "2.5.3",
   "opencv": "5.0.0",
   "scipy": "1.18.1",
@@ -23,49 +23,49 @@
  "scores": {
   "cat": {
    "default": {
-    "ssim": 0.463,
-    "psnr": 20.15,
+    "ssim": 0.4641,
+    "psnr": 20.3,
     "triangles": 485
    },
    "grid16": {
-    "ssim": 0.5134,
-    "psnr": 21.11,
+    "ssim": 0.5132,
+    "psnr": 21.29,
     "triangles": 1109
    }
   },
   "coffee": {
    "default": {
-    "ssim": 0.39,
-    "psnr": 16.44,
+    "ssim": 0.3906,
+    "psnr": 16.5,
     "triangles": 490
    },
    "grid16": {
-    "ssim": 0.4356,
-    "psnr": 17.79,
+    "ssim": 0.4347,
+    "psnr": 17.89,
     "triangles": 1131
    }
   },
   "portrait": {
    "default": {
-    "ssim": 0.4671,
-    "psnr": 15.41,
+    "ssim": 0.4684,
+    "psnr": 15.42,
     "triangles": 717
    },
    "grid16": {
-    "ssim": 0.5319,
+    "ssim": 0.5288,
     "psnr": 16.96,
     "triangles": 1652
    }
   },
   "rocket": {
    "default": {
-    "ssim": 0.7083,
-    "psnr": 22.63,
+    "ssim": 0.7111,
+    "psnr": 22.83,
     "triangles": 489
    },
    "grid16": {
-    "ssim": 0.7278,
-    "psnr": 23.51,
+    "ssim": 0.727,
+    "psnr": 23.55,
     "triangles": 1126
    }
   }
