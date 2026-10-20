@@ -1,0 +1,26 @@
+/* Colour tokens (Bone) and font stacks. Change the palette here only. */
+:root {
+  --paper: #fafaf7;
+  --ink: #111111;
+  --mist: #6b6b6b;
+  --line: #dcdcd6;
+  --accent: #111111;
+  --tint: #f0f0ea;
+  --ok: #2f5d3a;
+  --no: #8c2f23;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif
+}
+
+@media (prefers-color-scheme:light) {
+  :root {
+    --paper: #121211;
+    --ink: #e9e9e4;
+    --mist: #9a9a94;
+    --line: #2e2e2b;
+    --accent: #e9e9e4;
+    --tint: #1c1c1a;
+    --ok: #8fc29a;
+    --no: #e08a74
+  }
+}

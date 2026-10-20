@@ -81,9 +81,8 @@ jobs:
         shell: bash
         env:
           HYPOTHESIS_PROFILE: ci # 100 fixed examples per property, same result on every run
-          # Quality baseline: report only. The spread across legs is measured (at most 0.0007 SSIM and 0.02 dB,
-          # docs/BASELINE_REPORT.md). After lowering the tolerance in tests/quality_support.py, remove the next line
-          # so a drift fails the build.
+          # Quality baseline: blocking at 0.005 SSIM / 0.1 dB. The measured spread is at most 0.0007 SSIM and
+          # 0.02 dB (docs/BASELINE_REPORT.md).
           LOWPOLY_QUALITY_OUT: quality-scores.json
         run: |
           coverage run --branch --source=src -m unittest discover -s tests -v

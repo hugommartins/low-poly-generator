@@ -5,7 +5,7 @@ Method and validation: docs/BASELINE_REPORT.md. After an intended output change,
 and regenerate with `python scripts/update_quality_baseline.py`.
 
 Environment variables:
-  LOWPOLY_QUALITY_MODE=report   print differences instead of failing (used on CI until the spread is known)
+    LOWPOLY_QUALITY_MODE=report   optionally print differences instead of failing
   LOWPOLY_QUALITY_OUT=file.json write the measured scores and environment to this file
 """
 

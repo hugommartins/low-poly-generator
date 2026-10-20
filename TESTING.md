@@ -1,18 +1,18 @@
 # Testing strategy
 
-How `lowpoly` is tested, why, and what is not covered yet. Defects found so far are in [BUG_LOG.md](BUG_LOG.md). The pipeline that runs these checks is described in `.github/workflows/`.
+How `lowpoly` is tested, why, and what is not covered yet. Defects found so far are in [BUG_LOG.md](/docs/BUG_LOG.md). The pipeline that runs these checks is described in `.github/workflows/`.
 
 **Status at a glance**
 
 | Area | State |
 |---|---|
-| Automated suite | 69 tests with Hypothesis installed (30 example-based, 21 property-based, 10 metamorphic, 3 differential, 5 quality baseline), all `unittest`. Without Hypothesis the run reports 40 tests and skips 3: the two Hypothesis modules and, as root, the permission test. Without `scikit-image` the baseline scoring test is skipped too |
-| Coverage | Not measured yet. CI reports it; set a minimum after the first run |
-| Property-based tests | 21 tests in `tests/test_properties.py` (Hypothesis), 3 of them expected failures for BUG-010 to BUG-012. Only run against a stand-in so far; not yet run with the real package |
-| Metamorphic tests | 10 tests in `tests/test_metamorphic.py` (Hypothesis): 6 exact relations, 4 with stated tolerances. Only run against a stand-in so far; not yet run with the real package |
+| Automated suite | 75 tests with Hypothesis and `scikit-image` installed, all `unittest` (36 example-based, 21 property-based, 10 metamorphic, 3 differential, 5 quality baseline). All 75 pass in a full run of `python -m unittest discover -s tests` on the maintainer's machine (about 40 seconds, no skipped tests reported). Without Hypothesis the two Hypothesis modules are skipped; as root the permission test is skipped; without `scikit-image` the baseline scoring test is skipped |
+| Coverage | Measured in CI on Ubuntu with Python 3.12 (93% total at the first run); the build fails below a floor of 91% there. The other legs do not enforce it, because OS-specific branches and skipped tests change their totals |
+| Property-based tests | `tests/test_properties.py` (Hypothesis). BUG-010 to BUG-012 are fixed, so their tests are ordinary passing tests |
+| Metamorphic tests | 10 tests in `tests/test_metamorphic.py` (Hypothesis): 6 exact relations, 4 with stated tolerances. They pass with the real package |
 | Differential test against the original script | `tests/test_differential.py`, 3 tests: 4 photos x 4 settings plus odd-sized images, byte-for-byte |
-| Quality baseline | `tests/test_quality_baseline.py`: stored SSIM and PSNR for the sample photos, fails on a move beyond 0.01 SSIM or 0.3 dB. Needs scikit-image. Design and validation: [BASELINE_REPORT.md](BASELINE_REPORT.md) |
-| CI | Written, not run on GitHub. Uploads the quality scores of each leg and does not fail on them |
+| Quality baseline | `tests/test_quality_baseline.py`: stored SSIM and PSNR for the sample photos, fails on a move beyond 0.005 SSIM or 0.1 dB in either direction, on every CI environment. Needs scikit-image. Design and validation: [BASELINE_REPORT.md](BASELINE_REPORT.md) |
+| CI | Nine test environments (section 9), a package smoke test, a lint check and a dependency audit (both advisory). Runs on push, pull request, by hand and weekly. Each leg uploads its quality scores and a `spread` job compares them. The `Required checks` job fails when any test leg or the package job fails; merge-blocking needs it set as required in the repository's branch protection |
 
 ## 1. Scope
 
@@ -42,14 +42,14 @@ Photo ────────┤                                             �
 | Bad input crashes or misleads | Confusing failures, as in BUG-004 | The file-handling tests (R8, R9) |
 | Output is lost or overwritten | Data loss, as in BUG-002 and BUG-003 | Output-folder and same-stem tests |
 | Works on one machine only | Fails for other users (NumPy 2, Intel Mac, Windows) | CI matrix |
-| Relief shading is wrong | Artefacts or inverted lighting | The relief tests (R11, R12) and relief properties (R15); BUG-009 is open |
+| Relief shading is wrong | Artefacts or inverted lighting | The relief tests (R11, R12), the depth-step tests (R21) and relief properties (R15) |
 | Output quality drops without an error | The picture looks worse and no assertion fails | Quality baseline: stored SSIM and PSNR for the sample photos (`tests/test_quality_baseline.py`, [BASELINE_REPORT.md](BASELINE_REPORT.md)) |
 
 ## 3. Test levels
 
 | Level | What it covers | Where |
 |---|---|---|
-| Unit | Single stages with small synthetic images: edges, point placement, colours, relief maths | `CoreTests`, `ReliefTests` in `tests/test_core.py` |
+| Unit | Single stages with small synthetic images: edges, point placement, colours, relief maths | `CoreTests`, `ReliefTests` in `tests/test_core.py`; `tests/test_relief_steps.py` |
 | Integration | File in, file out through `render_file` and the CLI, using the bundled sample photos | `FileTests` |
 | Property | Rules that hold for any image, checked on generated images and sizes | `tests/test_properties.py` |
 | Metamorphic | How the output must change when the input changes in a known way (see section 6) | `tests/test_metamorphic.py` |
@@ -90,10 +90,11 @@ Image output has no single right answer, so the checks use different kinds of or
 | R14 | The triangulation is a valid Delaunay mesh: areas tile the frame exactly, no zero-area triangle, every point used, `2n - 2 - b` triangles, no point inside a circumcircle | `TriangulationProperties` (5 tests) |
 | R15 | Colours and files are consistent: one RGB colour per triangle, a flat image gives one colour, SVG and PNG have the right shape | `OutputProperties` (7 passing tests) |
 | R16 | Relief stays within its lighting bounds, zero shading changes nothing, inverted depth with the light turned 180 degrees gives the same shading | `ReliefProperties` (3 tests) |
-| R17 | Open defects stay on record: edge strip, one-pixel images, mean-mode rounding | Three `expectedFailure` tests in `OutputProperties` (BUG-010, 011, 012) |
+| R17 | Fixed defects stay fixed: edge strip, one-pixel images, mean-mode rounding | Tests in `OutputProperties` (BUG-010, 011, 012) |
 | R18 | Relief is the same picture under changes that must not matter: light angle plus 360 degrees, depth scaled and offset, a mirrored scene with a mirrored light | `ExactRelations` (3 tests) |
 | R19 | Shading strength is linear; brightening a photo by a constant keeps the edges, points and triangles; transposing a photo transposes its edge map | `ExactRelations` (3 tests) |
 | R20 | Under changes that preserve the content only approximately, the output stays within a stated tolerance: flips, red and blue swapped, image and grid doubled | `ToleratedRelations` (4 tests) |
+| R21 | Relief at a depth step: triangles that straddle the step keep their colour, triangles away from it are unchanged, a smooth slope is still shaded | `tests/test_relief_steps.py` (3 tests, BUG-009) |
 
 ## 6. Metamorphic tests
 
@@ -109,9 +110,9 @@ A metamorphic test changes the input in a way whose effect on the output is know
 - **They state product intent in plain terms.** "Brightening a photo must not move the triangles" is a sentence a user or reviewer can check. Together the relations read as a specification of behaviour the product promises but never wrote down.
 - **They scale with Hypothesis.** Every generated image is another test of the relation, including ones nobody would write by hand.
 
-### Evidence that they can fail
+### Sanity check that they can fail
 
-Eight defects were injected one at a time into a scratch copy of the code. Each was caught by the test written for it, and by no unrelated one:
+Eight defects were injected one at a time into a scratch copy of the code. Each defect was designed for one test and produced with the Hypothesis stand-in, so this shows that each test can fail, not how many real defects they detect. Each was caught by the test written for it, and by no unrelated one:
 
 | Injected defect | Caught by |
 |---|---|
@@ -124,7 +125,7 @@ Eight defects were injected one at a time into a scratch copy of the code. Each 
 | Grid size capped at 10 | doubling image and grid |
 | Blue channel offset added in `smooth` | swapping blue and red |
 
-These runs used the stand-in for Hypothesis (80 examples each), not the real package.
+These runs used the stand-in for Hypothesis (80 examples each). The suite passes with the real package.
 
 ### The relations
 
@@ -161,19 +162,19 @@ The tolerances were set by measuring the worst deviation over about 1,500 random
 
 - A bug that affects both runs the same way is invisible. If the light's y component had the wrong sign everywhere, the mirror relation would still hold. The directional example test (`test_light_direction_matters`) covers that, which is why the methods are used together.
 - A tolerance can hide small real drift. The tolerated relations catch faults larger than the stated error, not smaller ones.
-- The tests have not run with the real Hypothesis package yet. Only the stand-in was used here.
+- The injected-defect table above was produced with the stand-in, not the real package, and has not been repeated.
 
 ## 7. Gaps and planned work
 
-Output quality against the photo (SSIM, PSNR, a baseline ratchet) is not tested. It is explored separately in [QUALITY_METRICS.md](QUALITY_METRICS.md) and [PARAMETER_STUDY.md](PARAMETER_STUDY.md); nothing there is implemented.
+Output quality against the photo is checked by the quality baseline ([BASELINE_REPORT.md](BASELINE_REPORT.md)). The studies behind the settings are [QUALITY_METRICS.md](QUALITY_METRICS.md), [PARAMETER_STUDY.md](PARAMETER_STUDY.md) and [GRID_RATIO_STUDY.md](GRID_RATIO_STUDY.md); no test asserts their findings.
 
 1. **Golden file.** Not needed for the original script, because the differential test compares live output in one environment. A stored golden file would only add protection for features the original never had (relief, mean colour mode), and its bytes would differ across OpenCV and SciPy builds, so compare counts or keep one file per platform.
 2. **Property-based tests: extend.** Done: point placement, triangulation (empty circumcircle, `2n - 2 - b` triangles, exact area), output (colour per triangle, SVG and PNG shape) and relief (bounds, inversion symmetry). Next: a stateful test of the CLI.
 3. **Metamorphic tests: extend.** Ten exist (section 6). Candidates not built: larger `grid_size` gives fewer points (held on three images but is not guaranteed, because merged points can break it); a different seed gives a different mesh that still passes every structural property; a shifted crop of a photo gives the same edges away from the border.
 4. **Input fuzzing.** 1x1 image, grayscale, RGBA, 16-bit PNG, EXIF-rotated, very large, non-ASCII path, read-only output folder.
-5. **Known defects on record.** BUG-010 to BUG-012 have `expectedFailure` property tests. BUG-009 (relief spikes) has none yet; it needs a stepped depth map and a threshold on the shading range.
+5. **Known defects on record.** No defect is open. BUG-009 to BUG-012 are fixed and guarded by tests.
 6. **Performance.** Time against point count, to confirm the run time grows sensibly.
-7. **Coverage threshold.** Set it after the first measured run.
+7. **Coverage threshold.** The floor is 91% on Ubuntu with Python 3.12, set 2 points under the first measured total (93%) so a small change does not trip it. Raise it as coverage grows; it measures lines run, not whether the tests would notice a fault.
 
 ## 8. How to run
 
@@ -184,7 +185,7 @@ HYPOTHESIS_PROFILE=ci python -m unittest tests.test_properties -v   # property t
 
 pip install coverage
 coverage run --branch --source=src -m unittest discover -s tests
-coverage report --show-missing
+coverage report --show-missing --fail-under=91
 ```
 
 Without installing the package, prefix the commands with `PYTHONPATH=src`. Without Hypothesis, `test_properties.py` and `test_metamorphic.py` are skipped as whole modules.
@@ -198,13 +199,25 @@ Without installing the package, prefix the commands with `PYTHONPATH=src`. Witho
 | `dev` (default) | 200 | Random, different every run | Local runs |
 | `ci` | 100 | Fixed (`derandomize`), same every run | CI |
 
-CI uses fixed inputs so that a red build always means the code changed, and a failure reproduces on the next run. The count of 100 is Hypothesis's default and keeps the run short across the CI matrix. The 100 was chosen, not derived; raise it if the run stays fast.
+CI uses fixed inputs so that a red build means the code or a new dependency release changed (section 9), and a failure reproduces on the next run. The count of 100 is Hypothesis's default and keeps the run short across the CI matrix. The 100 was chosen, not derived; raise it if the run stays fast.
 
 The consequence is that CI re-checks the same cases and does not look for new bugs. Exploration happens locally with the default profile. Hypothesis saves a failing example in `.hypothesis/` (ignored by git) and replays it on the next run, so a failure found locally stays reproducible until fixed.
 
 ## 9. Environments
 
-CI runs the suite on Linux (Python 3.9 to 3.13, NumPy 1.x and current), macOS on Apple silicon, macOS on Intel, and Windows. CI also runs a lint check and a dependency audit (both advisory), and builds the wheel for the smoke test. Each run installs the newest release of every dependency, so an upstream break shows up on the next push; the NumPy 2 failure in BUG-008 was found this way. There is no scheduled run: a break is seen only when something is pushed.
+CI runs the suite on nine environments:
+
+| Environment | Python | Dependencies |
+|---|---|---|
+| Linux | 3.9, 3.11 | Legacy: `numpy<2`, `opencv-python<4.12` |
+| Linux | 3.10, 3.12, 3.13, 3.14 | Newest releases |
+| macOS, Apple silicon | 3.12 | Newest releases |
+| macOS, Intel | 3.12 | Newest releases |
+| Windows | 3.12 | Newest releases |
+
+The test step uses `bash` on every system, because the default PowerShell on Windows reports only the exit code of the last command and can hide a failure. CI also runs a lint check and a dependency audit (both advisory), and builds the wheel for the smoke test. The `spread` job reads the uploaded quality scores and tabulates the difference between legs.
+
+Each run installs the newest release of every dependency, so an upstream break shows up on the next run; the NumPy 2 failure in BUG-008 was found this way. A weekly run on `main` (Monday 06:00 UTC) catches a break when nothing is pushed. A new push to a pull request cancels the older run of that pull request; runs on `main` are not cancelled.
 
 ## 10. Defect handling
 
@@ -212,7 +225,7 @@ Each defect is recorded in [BUG_LOG.md](BUG_LOG.md) with severity, root cause, f
 
 ## 11. Exit criteria for a release
 
-- All tests pass on every CI matrix leg.
+- All tests pass on every CI matrix leg (the `Required checks` job is green), and coverage is at or above the floor.
 - The packaged wheel installs in a clean environment and the smoke test passes.
 - No open defect rated High.
-- Open defects of lower severity are listed in `BUG_LOG.md` and in the README's limitations section (BUG-009 to BUG-012 are today).
+- Open defects of lower severity are listed in `BUG_LOG.md` and in the README's limitations section (none today).
