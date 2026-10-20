@@ -6,13 +6,15 @@ References (each photo, 384 px long side, grid 16, jitter 12, seeds 0-2):
   log    Laplacian-of-Gaussian zero crossings, strongest pixels, density matched to canny
   bsds   human-drawn boundaries (BSDS500), if --bsds is given; images are matched by file stem
 """
+
 import argparse
 import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
-from scipy.ndimage import gaussian_laplace, sobel as ndsobel
+from scipy.ndimage import gaussian_laplace
+from scipy.ndimage import sobel as ndsobel
 from skimage.morphology import skeletonize
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -52,7 +54,9 @@ def references(img):
     mag = np.hypot(ndsobel(gf, 0), ndsobel(gf, 1))
     sob = skeletonize(match_density(mag, mag > 0, 3 * n)) if n else canny
     lap = gaussian_laplace(gf, 2.0)
-    zc = (np.sign(lap) != np.sign(np.roll(lap, 1, 0))) | (np.sign(lap) != np.sign(np.roll(lap, 1, 1)))
+    zc = (np.sign(lap) != np.sign(np.roll(lap, 1, 0))) | (
+        np.sign(lap) != np.sign(np.roll(lap, 1, 1))
+    )
     log = match_density(mag, zc, n)
     return {"canny": canny, "sobel": sob, "log": log}
 
@@ -67,12 +71,20 @@ def mesh_near(res):
 
 def bsds_truth(root, stem, shape):
     import scipy.io as sio
+
     for f in Path(root).rglob(stem + ".mat"):
         gt = sio.loadmat(str(f))["groundTruth"][0]
         b = np.zeros(gt[0][0][0][1].shape, bool)
         for a in gt:
             b |= a[0][0][1] > 0
-        return cv2.resize(b.astype(np.uint8), (shape[1], shape[0]), interpolation=cv2.INTER_NEAREST) > 0
+        return (
+            cv2.resize(
+                b.astype(np.uint8),
+                (shape[1], shape[0]),
+                interpolation=cv2.INTER_NEAREST,
+            )
+            > 0
+        )
     return None
 
 
@@ -90,17 +102,31 @@ def main():
         grid = max(2, round(max(img.shape[:2]) / CELLS))
         for lo, hi in SETTINGS:
             for seed in SEEDS:
-                near = mesh_near(generate(img, grid_size=grid, canny_low=lo, canny_high=hi, seed=seed))
+                near = mesh_near(
+                    generate(
+                        img, grid_size=grid, canny_low=lo, canny_high=hi, seed=seed
+                    )
+                )
                 for name, e in refs.items():
                     if e.any():
-                        lifts.setdefault((name, lo, hi), []).append(near[e].mean() - near.mean())
-    print(f"{'reference':<8}" + "".join(f"{lo}/{hi:<8}" for lo, hi in SETTINGS) + "best   images")
+                        lifts.setdefault((name, lo, hi), []).append(
+                            near[e].mean() - near.mean()
+                        )
+    print(
+        f"{'reference':<8}"
+        + "".join(f"{lo}/{hi:<8}" for lo, hi in SETTINGS)
+        + "best   images"
+    )
     for name in ("canny", "sobel", "log", "bsds"):
         if (name, *SETTINGS[0]) not in lifts:
             continue
         m = [float(np.mean(lifts[(name, lo, hi)])) for lo, hi in SETTINGS]
         best = SETTINGS[int(np.argmax(m))]
-        print(f"{name:<8}" + "".join(f"{x:<12.4f}" for x in m) + f"{best[0]}/{best[1]}  {len(lifts[(name, *SETTINGS[0])]) // len(SEEDS)}")
+        print(
+            f"{name:<8}"
+            + "".join(f"{x:<12.4f}" for x in m)
+            + f"{best[0]}/{best[1]}  {len(lifts[(name, *SETTINGS[0])]) // len(SEEDS)}"
+        )
 
 
 main()
