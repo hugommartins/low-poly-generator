@@ -1,0 +1,587 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Checking Low-Poly Output Quality Without an Answer Key</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Literata:ital,opsz,wght@1,7..72,400&display=swap">
+<style>
+/* Layout: one reading column on white paper, set like a printed report. Hairline rules, thick ink rules for emphasis, no filled bands.
+   Light only. Colour 60-30-10: white paper ~60%, ink (type, rules, tinted panels) ~30%, orange ~10% (section dash, stage numerals, links, focus). */
+:root {
+  --bg: #ffffff;
+  --tint: #eef3f4;
+  --fg: #101a1d;
+  --ink: #16333a;
+  --muted: #4b575b;
+  --rule: #cfd6d8;
+  --accent: #bd4a08;
+  --head: "Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --body: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serif: "Literata", Georgia, "Times New Roman", serif;
+  --tail: #3f7a8a;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --gl: max(16px, env(safe-area-inset-left, 0px));
+  --gr: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 400 .95rem/1.75 var(--body);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3 { font-family: var(--head); text-wrap: balance; margin: 0; color: var(--ink); }
+p { margin: 0 0 1em; }
+a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: .22em; }
+a:hover { text-decoration-thickness: 3px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+code { font: 500 1em var(--mono); background: var(--tint); padding: .08em .35em; border-radius: 3px; overflow-wrap: anywhere; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+.skip { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: -4rem; z-index: 50; background: var(--ink); color: #fff; font: 600 1rem var(--head); padding: .8rem 1.1rem; }
+.skip:focus { top: .75rem; }
+
+.wide { max-width: 59.5rem; margin-inline: auto; padding-left: var(--gl); padding-right: var(--gr); }
+
+/* Masthead: title and opening line left, mosaic right, then a strip of four figures */
+.hero { border-top: 6px solid var(--ink); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 2rem 3rem; align-items: center; padding-block: 2.75rem 0; }
+.hero h1 { font-size: clamp(2.3rem, 4.6vw, 3.4rem); line-height: 1.04; font-weight: 700; letter-spacing: -.022em; }
+.hero h1 .tail { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; color: var(--tail); font-size: 1.04em; }
+.lede { font-size: clamp(1rem, 1.8vw, 1.1rem); line-height: 1.65; margin: 1.75rem 0 0; min-width: 0; }
+.mosaic { display: block; width: 100%; height: auto; justify-self: end; filter: saturate(.9); }
+.mosaic polygon { stroke: #fff; stroke-width: 1.5; stroke-linejoin: round; }
+.strip { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--rule); }
+.strip li { margin: 0; padding: 1.5rem 1.4rem 1.7rem; border-left: 1px solid var(--rule); min-width: 0; }
+.strip li:first-child { border-left: 0; padding-left: 0; }
+.strip .num { font: 700 clamp(1.8rem, 3vw, 2.2rem)/1.05 var(--head); letter-spacing: -.02em; color: var(--ink); margin: 0 0 .55rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.strip .lab { margin: 0; font-size: .86rem; line-height: 1.55; color: var(--muted); }
+
+/* Layout: links in a left rail on wide screens, a sticky bar on narrow ones */
+.layout { max-width: 59.5rem; margin-inline: auto; padding-left: var(--gl); padding-right: var(--gr); }
+.rail {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  display: flex; gap: .25rem 1.6rem; overflow-x: auto; scrollbar-width: none;
+  margin-inline: calc(-1 * var(--gl)) calc(-1 * var(--gr));
+  padding-inline: var(--gl) var(--gr);
+  background: var(--bg); border-bottom: 1px solid var(--rule);
+  font: 600 1rem var(--head);
+  overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 28px), transparent 100%);
+}
+.rail::-webkit-scrollbar { display: none; }
+.rail a { display: inline-flex; align-items: center; flex: none; min-height: 2.75rem; white-space: nowrap; text-decoration: none; }
+/* The sliding bar is the only line; hover just shifts the colour (and only where a real hover exists, so taps don't leave it stuck) */
+@media (hover: hover) { .rail a:hover { color: var(--accent); } }
+/* Mouse and tap clicks show no ring; keyboard focus gets one tucked inside the link so it never doubles the bar */
+.rail a:focus:not(:focus-visible) { outline: none; }
+.rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* One indicator slides between links instead of an underline appearing and disappearing */
+.ind { position: absolute; left: 0; bottom: 6px; height: 3px; width: var(--iw, 0px); background: var(--accent); transform: translateX(var(--ix, 0px)); opacity: 0; pointer-events: none; transition: transform .32s cubic-bezier(.3,.7,.2,1), width .32s cubic-bezier(.3,.7,.2,1), opacity .2s ease; }
+.rail[data-ready] .ind { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .ind { transition: none; } }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 30; }
+@media (min-width: 1000px) {
+  .layout { display: grid; grid-template-columns: 9.5rem minmax(0, 47rem); column-gap: 3rem; align-items: start; }
+  .rail { top: 2rem; margin: 2.75rem 0 0; padding: 0; flex-direction: column; gap: 0; overflow: visible; background: none; border-bottom: 0; -webkit-mask-image: none; mask-image: none; }
+  .ind { top: 0; bottom: auto; transform: translate(var(--ix, 0px), var(--iy, 0px)); }
+  .rail a { align-self: flex-start; } /* link (and bar) hug the word instead of stretching across the column */
+}
+
+/* Sections: a short accent dash above each heading */
+.sec { padding-block: 1.75rem; scroll-margin-top: 3rem; }
+.sec h2 { font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 700; letter-spacing: -.015em; line-height: 1.15; margin-bottom: 1.4rem; }
+.sec h2::before { content: ""; display: block; width: 2.25rem; height: 4px; background: var(--accent); margin-bottom: .8rem; }
+/* Mono text runs wide, so keep lines to about 70 characters */
+.sec p, .sec li, .aside dd, .callout p, .terms { min-width: 0; }
+.sec ul:not(.stats) { padding-left: 1.25rem; margin: 0 0 1em; }
+.sec li { margin-bottom: .7rem; padding-left: .25rem; }
+.sec li::marker { color: var(--muted); }
+.sec ul > li > strong { font-family: var(--head); font-weight: 650; color: var(--ink); }
+
+/* Context aside */
+.aside { margin: 1.75rem 0 0; padding: .6rem 0; display: grid; background: var(--tint); }
+.aside div { padding: .6rem 1.25rem; min-width: 0; }
+.aside dt { font: 700 1rem var(--head); color: var(--ink); margin-bottom: .1rem; }
+.aside dd { margin: 0; }
+
+/* Outcome: ruled like a printed results box */
+.band .lead { font-family: var(--head); font-size: clamp(1.3rem, 3.2vw, 1.6rem); line-height: 1.32; font-weight: 600; letter-spacing: -.005em; color: var(--ink); margin: 0 0 2rem; text-wrap: pretty; }
+.terms { font-size: .88rem; line-height: 1.7; margin: 0 0 2rem; padding: 1rem 1.2rem; background: var(--tint); }
+.terms strong { font-family: var(--head); font-weight: 700; color: var(--ink); }
+.stats { list-style: none; margin: 0 0 2.25rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); gap: 1.75rem 2.5rem; }
+.stat { padding: 0; margin: 0; min-width: 0; }
+.stat .num { font: 700 clamp(1.6rem, 3.6vw, 2.05rem)/1.05 var(--head); letter-spacing: -.015em; color: var(--ink); margin: 0 0 .55rem; font-variant-numeric: tabular-nums; }
+.stat .lab { margin: 0; font-size: .86rem; line-height: 1.6; }
+
+.fig { margin: 2rem 0 0; }
+.fig .ph { display: grid; place-content: center; gap: .35rem; text-align: center; min-height: 13rem; padding: 1.5rem; border: 2px dashed var(--muted); background: var(--tint); color: var(--muted); font: 500 .95rem/1.4 var(--head); }
+.fig .ph code { background: transparent; padding: 0; }
+.fig figcaption { font-size: .84rem; line-height: 1.6; color: var(--muted); margin-top: .7rem; }
+.chart .legend { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; list-style: none; margin: 0 0 .6rem; padding: 0; font: 600 .86rem/1.2 var(--head); color: var(--ink); }
+.chart .legend li { display: flex; align-items: center; gap: .45rem; margin: 0; padding: 0; max-width: none; }
+.chart .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr)); gap: 1.25rem 1.5rem; }
+.chart .panel h4 { font: 650 .95rem/1.3 var(--head); color: var(--ink); margin: 0 0 .25rem; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart svg text { font: 500 11.5px var(--mono); fill: var(--muted); }
+.chart svg text.axl { font-size: 12px; fill: var(--fg); }
+.chart svg text.bandlbl { font: 600 11px var(--head); fill: var(--ink); letter-spacing: .02em; }
+.chart svg text.note { font: 600 11.5px var(--head); fill: var(--ink); }
+.chart .legend svg { width: 16px; height: 16px; flex: none; }
+.chart .data { margin-top: .8rem; font-size: .84rem; }
+.chart .data summary { cursor: pointer; font: 600 .88rem var(--head); color: var(--ink); min-height: 2.75rem; display: flex; align-items: center; }
+.chart .data .on-open, .chart .data[open] .on-closed { display: none; }
+.chart .data[open] .on-open { display: inline; }
+.chart .data table { border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.chart .data th, .chart .data td { padding: .3rem 1rem .3rem 0; text-align: left; border-bottom: 1px solid var(--rule); font-weight: 400; }
+.chart .data thead th { font: 600 .8rem var(--head); color: var(--ink); }
+.chart .data tbody th { font-weight: 600; color: var(--ink); }
+.fig figcaption strong { font-family: var(--head); color: var(--ink); }
+.callout { margin: 2rem 0 0; padding: 1.2rem 1.4rem; background: var(--tint); }
+.callout p { margin: 0; }
+.callout strong { font-family: var(--head); font-weight: 700; color: var(--ink); }
+
+/* Stages: plain numerals in a left column, ruled rows */
+.stages { list-style: none; margin: 0; padding: 0; }
+.stages > li { display: grid; grid-template-columns: 3rem minmax(0, 1fr); column-gap: .5rem; margin: 0; padding: .9rem 0; }
+.stages .n { grid-row: 1 / span 2; font: 700 1.7rem/1.1 var(--head); color: var(--accent); font-variant-numeric: tabular-nums; }
+.stages h3 { grid-column: 2; font-size: 1.2rem; font-weight: 700; line-height: 1.3; margin: .1rem 0 .35rem; }
+.stages p { grid-column: 2; margin: 0; }
+
+/* Learning */
+.learn { list-style: none; margin: 0; padding: 0; }
+.learn li { margin: 0; padding: .9rem 0; }
+.learn h3 { font-size: 1.15rem; font-weight: 700; line-height: 1.3; margin: 0 0 .3rem; }
+.learn p { margin: 0; }
+/* Section spacing comes only from .sec padding, so every gap is the same: nothing at the end of a section adds its own space */
+.sec .wrap > :last-child { margin-bottom: 0; }
+.sec .wrap > ul:last-child > li:last-child, .sec .wrap > ol:last-child > li:last-child { margin-bottom: 0; padding-bottom: 0; }
+
+/* Next steps */
+.steps { list-style: none; margin: 0; padding: 0; }
+.steps li { margin: 0; padding: .7rem 0; }
+.steps b { font-family: var(--head); font-weight: 700; color: var(--ink); }
+
+/* Colophon */
+.foot { border-top: 1px solid var(--rule); }
+.foot .wide { padding-block: 2rem 3rem; font-size: .86rem; line-height: 1.7; color: var(--muted); }
+.foot p { margin: 0; }
+
+@media (max-width: 799px) {
+  .hero-grid { grid-template-columns: minmax(0, 1fr); padding-block: 2rem 0; }
+  .mosaic { display: none; }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 2.25rem; }
+  .strip li { padding: 1.3rem 1rem 1.5rem; }
+  .strip .num { font-size: 1.5rem; }
+  .strip li:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .strip li:nth-child(n+3) { border-top: 1px solid var(--rule); }
+}
+@media (max-width: 560px) {
+  .sec { padding-block: 1.5rem; }
+  .stages > li { grid-template-columns: 2.4rem minmax(0, 1fr); }
+}
+@media (prefers-contrast: more) {
+  :root { --muted: var(--fg); --rule: var(--muted); }
+}
+@media (forced-colors: active) {
+  .sec h2::before { background: CanvasText; }
+  .ind { background: CanvasText; }
+}
+
+/* Print */
+@media print {
+  body { font-size: 10.5pt; line-height: 1.5; }
+  .skip, .rail { display: none; }
+  .layout { display: block; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr) 14rem; }
+  .sec { padding-block: 1.5rem; }
+  .stages > li, .learn li, .steps li, .strip li { break-inside: avoid; }
+}
+</style>
+
+<a class="skip" href="#main">Skip to the case study</a>
+
+<header class="hero">
+  <div class="wide">
+    <div class="hero-grid">
+      <h1>Checking Low&#8209;Poly Output Quality <span class="tail">Without an Answer Key</span></h1>
+      <svg class="mosaic" viewBox="0 0 520 320" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <polygon points="0,0 130,10 0,100" fill="#f4b13d"></polygon>
+    <polygon points="130,10 120,125 0,100" fill="#f56f4f"></polygon>
+    <polygon points="130,10 260,0 120,125" fill="#f6e7c8"></polygon>
+    <polygon points="260,0 250,105 120,125" fill="#3fc0ad"></polygon>
+    <polygon points="260,0 390,12 250,105" fill="#4b73f0"></polygon>
+    <polygon points="390,12 400,120 250,105" fill="#f4b13d"></polygon>
+    <polygon points="390,12 520,0 400,120" fill="#f56f4f"></polygon>
+    <polygon points="520,0 520,108 400,120" fill="#f6e7c8"></polygon>
+    <polygon points="0,100 120,125 0,230" fill="#3fc0ad"></polygon>
+    <polygon points="120,125 140,215 0,230" fill="#f6e7c8"></polygon>
+    <polygon points="120,125 250,105 140,215" fill="#f4b13d"></polygon>
+    <polygon points="250,105 270,235 140,215" fill="#f56f4f"></polygon>
+    <polygon points="250,105 400,120 270,235" fill="#4b73f0"></polygon>
+    <polygon points="400,120 390,222 270,235" fill="#3fc0ad"></polygon>
+    <polygon points="400,120 520,108 390,222" fill="#f6e7c8"></polygon>
+    <polygon points="520,108 520,230 390,222" fill="#f4b13d"></polygon>
+    <polygon points="0,230 140,215 0,320" fill="#f56f4f"></polygon>
+    <polygon points="140,215 130,320 0,320" fill="#4b73f0"></polygon>
+    <polygon points="140,215 270,235 130,320" fill="#3fc0ad"></polygon>
+    <polygon points="270,235 260,320 130,320" fill="#f6e7c8"></polygon>
+    <polygon points="270,235 390,222 260,320" fill="#f4b13d"></polygon>
+    <polygon points="390,222 390,320 260,320" fill="#f56f4f"></polygon>
+    <polygon points="390,222 520,230 390,320" fill="#4b73f0"></polygon>
+    <polygon points="520,230 520,320 390,320" fill="#3fc0ad"></polygon>
+  </g>
+</svg>
+    </div>
+    <p class="lede">A photo has many acceptable low-poly versions and no single correct one, so tests cannot compare against an expected image. This study measured how much results vary from run to run, then built a check based on stored scores that caught every fault the author deliberately injected into the code. The faults were a hand-picked set.</p>
+    <ul class="strip" role="list">
+      <li><p class="num">21</p><p class="lab">changes injected on purpose into a copy of the code to validate the baseline</p></li>
+      <li><p class="num">0.005 / 0.1</p><p class="lab">SSIM / dB tolerance that fails the CI run</p></li>
+      <li><p class="num">36</p><p class="lab">images swept by edge density</p></li>
+      <li><p class="num">9</p><p class="lab">CI environments checked for platform spread</p></li>
+    </ul>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="rail" id="rail" aria-label="On this page">
+  <span class="ind" aria-hidden="true"></span>
+  <a href="#context">Context</a>
+  <a href="#outcome">Outcome</a>
+  <a href="#stages">Key stages</a>
+  <a href="#learning">Learning</a>
+  <a href="#next">Next steps</a>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<section class="sec" id="context" aria-labelledby="h-context">
+  <div class="wrap">
+    <h2 id="h-context">Context</h2>
+    <p><code>lowpoly</code> turns a photo into an image made from flat-coloured triangles, called the mesh. The grid size, the spacing in pixels between starting points, sets how many triangles there are, and triangle size changes the style. So there is no single correct output. Before this work, the four bundled sample outputs were judged by looking at them.</p>
+    <p>This is the test oracle problem. A test oracle is whatever decides whether a result is correct, and the simplest one is an expected value. Here no expected value exists, and a mesh can be valid and repeatable and still look wrong. Tests have to rely on weaker, partial oracles: rules every output must obey (property tests), a trusted reference version (a differential test), known input-output relations (metamorphic tests) and similarity to the source photo (the baseline check). Human judgement was not used.</p>
+    <dl class="aside">
+      <div><dt>Goal</dt><dd>Decide which image-quality checks <code>lowpoly</code> needs, from measurements instead of looking at outputs.</dd></div>
+      <div><dt>Challenge</dt><dd>Point placement is random, many meshes are acceptable for one photo, and whether an output looks good is a human judgement.</dd></div>
+      <div><dt>Constraints</dt><dd>Exploratory work. No people rated the images, and the injected faults were chosen by the author.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="sec band" id="outcome" aria-labelledby="h-outcome">
+  <div class="wrap">
+    <h2 id="h-outcome">Outcome</h2>
+    <p class="lead">A baseline of stored scores now fails the CI run when a score moves, up or down, by more than the tolerance: 0.005 SSIM or 0.1 dB. It caught every fault and tested size in the author-selected set of 21 injected changes.</p>
+    <p class="terms"><strong>Reading the scores.</strong> A baseline is a set of scores stored from a known-good version, and the tolerance is the largest change in a score that still passes. CI (continuous integration) runs the tests automatically on several systems whenever the code changes. SSIM, the structural similarity index, runs from 0 to 1, and higher means closer to the source photo in local shape, contrast and brightness. PSNR, peak signal-to-noise ratio, is reported in decibels (dB), and higher means a smaller average colour error. Spread is how much a measure varies: across repeated runs (standard deviation) or across systems (platform spread).</p>
+
+    <ul class="stats">
+      <li class="stat"><p class="num"><span aria-hidden="true">0.002–0.006</span><span class="sr">0.002 to 0.006</span></p><p class="lab">SSIM standard deviation (typical spread) across 20 seeds, which fix the random point placement. For PSNR it is 0.1 to 0.3 dB. This noise floor means smaller differences are not real.</p></li>
+      <li class="stat"><p class="num">0.0007</p><p class="lab">SSIM at most, with 0.02 dB, of platform spread (the difference between operating systems and library versions) across nine CI environments. That is 7 and 5 times below the tolerances.</p></li>
+      <li class="stat"><p class="num"><span aria-hidden="true">0.32–0.78</span><span class="sr">0.32 to 0.78</span></p><p class="lab">SSIM against the source across the settings of the four sample photos, so no fixed pass mark can work.</p></li>
+    </ul>
+
+    <ul>
+      <li><strong>Both measures are needed.</strong> Large faults (wrong photo, shifted output) moved both. Small faults (darker colours, a blackened border row) barely moved SSIM but showed in PSNR.</li>
+      <li><strong>Compare, do not threshold.</strong> At grid 16, each photo scored 0.17 to 0.45 higher against its own source than against the best of the other three photos, and a margin of 0.10 holds for these four photos.</li>
+      <li><strong>Seeds must be pinned.</strong> A pinned seed is fixed, so every run places points the same way. The tolerances sit inside the seed-to-seed noise range, so unpinned seeds would trip them. They were tightened after misses on this set, and the smallest sizes are caught with thin margins.</li>
+      <li><strong>Platforms agree closely.</strong> Linux, Windows and Intel macOS match the stored scores exactly. Apple silicon differs slightly.</li>
+      <li><strong>Settings that follow edges best.</strong> Edge lift measures how closely the mesh follows the photo's edges, with the chance level (what the measure gives with no edge-following at all) subtracted. Jitter is how far a point may move from its grid position. Edge lift peaks at about 16 cells across the long side (the longer image side divided by the grid size) with jitter at half the grid, and at a 16 px grid with the package's fixed 12 px jitter. The package defaults are unchanged.</li>
+    </ul>
+
+    <figure class="fig chart">
+      <div class="chart-head"><ul class="legend" role="list"><li><svg viewBox="-8 -8 16 16" width="16" height="16" aria-hidden="true"><circle cx="0.0" cy="0.0" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/></svg>256 px image</li><li><svg viewBox="-8 -8 16 16" width="16" height="16" aria-hidden="true"><rect x="-4.2" y="-4.2" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/></svg>384 px image</li><li><svg viewBox="-8 -8 16 16" width="16" height="16" aria-hidden="true"><path d="M0.0 -6.0L6.0 0.0L0.0 6.0L-6.0 0.0Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/></svg>512 px image</li></ul></div>
+      <div class="panels" role="img" aria-labelledby="fig1cap">
+        <div class="panel"><h4>Coarse side lines up by cells across</h4>
+<svg viewBox="0 0 400 310" aria-hidden="true" focusable="false">
+<rect x="162.4" y="22" width="86.5" height="236" fill="var(--tint)"/>
+<text x="205.6" y="35" text-anchor="middle" class="bandlbl">peak zone</text>
+<line x1="58" x2="386" y1="258.0" y2="258.0" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="262.0" text-anchor="end">0.00</text>
+<line x1="58" x2="386" y1="218.7" y2="218.7" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="222.7" text-anchor="end">0.02</text>
+<line x1="58" x2="386" y1="179.3" y2="179.3" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="183.3" text-anchor="end">0.04</text>
+<line x1="58" x2="386" y1="140.0" y2="140.0" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="144.0" text-anchor="end">0.06</text>
+<line x1="58" x2="386" y1="100.7" y2="100.7" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="104.7" text-anchor="end">0.08</text>
+<line x1="58" x2="386" y1="61.3" y2="61.3" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="65.3" text-anchor="end">0.10</text>
+<line x1="58" x2="386" y1="22.0" y2="22.0" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="26.0" text-anchor="end">0.12</text>
+<text x="75.9" y="276" text-anchor="middle">6</text>
+<line x1="75.9" x2="75.9" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="111.8" y="276" text-anchor="middle">8</text>
+<line x1="111.8" x2="111.8" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="162.4" y="276" text-anchor="middle">12</text>
+<line x1="162.4" x2="162.4" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="198.3" y="276" text-anchor="middle">16</text>
+<line x1="198.3" x2="198.3" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="248.9" y="276" text-anchor="middle">24</text>
+<line x1="248.9" x2="248.9" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="284.8" y="276" text-anchor="middle">32</text>
+<line x1="284.8" x2="284.8" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="335.4" y="276" text-anchor="middle">48</text>
+<line x1="335.4" x2="335.4" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="371.3" y="276" text-anchor="middle">64</text>
+<line x1="371.3" x2="371.3" y1="258" y2="262" stroke="var(--muted)"/>
+<line x1="58" x2="386" y1="258" y2="258" stroke="var(--muted)"/>
+<text x="222.0" y="302" text-anchor="middle" class="axl">Cells across the long side (log scale)</text>
+<text transform="translate(11 140.0) rotate(-90)" text-anchor="middle" class="axl">Edge lift</text>
+<path d="M75.9 130.2 L111.8 102.6 L162.4 84.9 L198.3 86.9 L248.9 145.9 L284.8 216.7 L335.4 258.0 L371.3 258.0" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M75.9 155.7 L111.8 134.1 L162.4 84.9 L198.3 55.4 L248.9 63.3 L284.8 77.1 L335.4 136.1 L371.3 214.7" fill="none" stroke="var(--tail)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M75.9 142.0 L111.8 96.7 L162.4 77.1 L198.3 47.6 L248.9 81.0 L284.8 130.2 L335.4 214.7 L371.3 250.1" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="75.9" cy="130.2" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="111.8" cy="102.6" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="162.4" cy="84.9" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="198.3" cy="86.9" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="248.9" cy="145.9" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="284.8" cy="216.7" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="335.4" cy="258.0" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="371.3" cy="258.0" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<path d="M75.9 149.7L81.9 155.7L75.9 161.7L69.9 155.7Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M111.8 128.1L117.8 134.1L111.8 140.1L105.8 134.1Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M162.4 78.9L168.4 84.9L162.4 90.9L156.4 84.9Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M198.3 49.4L204.3 55.4L198.3 61.4L192.3 55.4Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M248.9 57.3L254.9 63.3L248.9 69.3L242.9 63.3Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M284.8 71.1L290.8 77.1L284.8 83.1L278.8 77.1Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M335.4 130.1L341.4 136.1L335.4 142.1L329.4 136.1Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M371.3 208.7L377.3 214.7L371.3 220.7L365.3 214.7Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<rect x="71.7" y="137.8" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="107.6" y="92.5" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="158.2" y="72.9" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="194.1" y="43.4" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="244.7" y="76.8" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="280.6" y="126.0" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="331.2" y="210.5" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="367.1" y="245.9" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+</svg></div>
+        <div class="panel"><h4>Dense side lines up by grid pixels</h4>
+<svg viewBox="0 0 400 310" aria-hidden="true" focusable="false">
+<rect x="169.1" y="22" width="68.8" height="236" fill="var(--tint)"/>
+<text x="203.5" y="35" text-anchor="middle" class="bandlbl">peak zone</text>
+<line x1="58" x2="386" y1="258.0" y2="258.0" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="262.0" text-anchor="end">0.00</text>
+<line x1="58" x2="386" y1="218.7" y2="218.7" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="222.7" text-anchor="end">0.02</text>
+<line x1="58" x2="386" y1="179.3" y2="179.3" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="183.3" text-anchor="end">0.04</text>
+<line x1="58" x2="386" y1="140.0" y2="140.0" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="144.0" text-anchor="end">0.06</text>
+<line x1="58" x2="386" y1="100.7" y2="100.7" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="104.7" text-anchor="end">0.08</text>
+<line x1="58" x2="386" y1="61.3" y2="61.3" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="65.3" text-anchor="end">0.10</text>
+<line x1="58" x2="386" y1="22.0" y2="22.0" stroke="var(--rule)" stroke-width="1"/>
+<text x="50" y="26.0" text-anchor="end">0.12</text>
+<text x="100.3" y="276" text-anchor="middle">64</text>
+<line x1="100.3" x2="100.3" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="128.9" y="276" text-anchor="middle">48</text>
+<line x1="128.9" x2="128.9" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="169.1" y="276" text-anchor="middle">32</text>
+<line x1="169.1" x2="169.1" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="197.7" y="276" text-anchor="middle">24</text>
+<line x1="197.7" x2="197.7" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="237.9" y="276" text-anchor="middle">16</text>
+<line x1="237.9" x2="237.9" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="266.5" y="276" text-anchor="middle">12</text>
+<line x1="266.5" x2="266.5" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="306.7" y="276" text-anchor="middle">8</text>
+<line x1="306.7" x2="306.7" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="335.3" y="276" text-anchor="middle">6</text>
+<line x1="335.3" x2="335.3" y1="258" y2="262" stroke="var(--muted)"/>
+<text x="375.5" y="276" text-anchor="middle">4</text>
+<line x1="375.5" x2="375.5" y1="258" y2="262" stroke="var(--muted)"/>
+<line x1="58" x2="386" y1="258" y2="258" stroke="var(--muted)"/>
+<text x="222.0" y="302" text-anchor="middle" class="axl">Grid size in pixels, coarse to dense (log scale)</text>
+<path d="M140.6 130.2 L169.1 102.6 L209.4 84.9 L237.9 86.9 L278.2 145.9 L306.7 216.7 L347.0 258.0 L375.5 258.0" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M71.7 155.7 L100.3 134.1 L140.6 84.9 L169.1 55.4 L209.4 63.3 L237.9 77.1 L278.2 136.1 L306.7 214.7" fill="none" stroke="var(--tail)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M100.3 142.0 L128.9 96.7 L169.1 77.1 L197.7 47.6 L237.9 81.0 L266.5 130.2 L306.7 214.7 L335.3 250.1" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="140.6" cy="130.2" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="169.1" cy="102.6" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="209.4" cy="84.9" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="237.9" cy="86.9" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="278.2" cy="145.9" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="306.7" cy="216.7" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="347.0" cy="258.0" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<circle cx="375.5" cy="258.0" r="4.6" fill="var(--ink)" stroke="#fff" stroke-width="1.5"/>
+<path d="M71.7 149.7L77.7 155.7L71.7 161.7L65.7 155.7Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M100.3 128.1L106.3 134.1L100.3 140.1L94.3 134.1Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M140.6 78.9L146.6 84.9L140.6 90.9L134.6 84.9Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M169.1 49.4L175.1 55.4L169.1 61.4L163.1 55.4Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M209.4 57.3L215.4 63.3L209.4 69.3L203.4 63.3Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M237.9 71.1L243.9 77.1L237.9 83.1L231.9 77.1Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M278.2 130.1L284.2 136.1L278.2 142.1L272.2 136.1Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<path d="M306.7 208.7L312.7 214.7L306.7 220.7L300.7 214.7Z" fill="var(--tail)" stroke="#fff" stroke-width="1.5"/>
+<rect x="96.1" y="137.8" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="124.7" y="92.5" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="164.9" y="72.9" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="193.5" y="43.4" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="233.7" y="76.8" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="262.3" y="126.0" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="302.5" y="210.5" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<rect x="331.1" y="245.9" width="8.4" height="8.4" fill="var(--accent)" stroke="#fff" stroke-width="1.5"/>
+<text x="386" y="96.7" text-anchor="end" class="note">all three sizes</text>
+<text x="386" y="110.7" text-anchor="end" class="note">meet at 0.022</text>
+<path d="M306.7 118.7L306.7 205.7" stroke="var(--muted)" stroke-width="1" fill="none"/>
+</svg></div>
+      </div>
+      <figcaption id="fig1cap"><strong>Figure 1.</strong> Average edge lift by cells across the long side (left) and by grid size in pixels (right), for 256, 384 and 512 px images. Each point averages the nine images that exist at all three sizes, three seeds each; jitter at half the grid. The shaded band is where the three sizes peak. Edge lift is the share of the photo&#8217;s edges near a mesh edge, minus chance.</figcaption>
+      <details class="data"><summary><span class="on-closed">Show the values</span><span class="on-open">Hide the values</span></summary>
+        <table><caption class="sr">Mean edge lift by cells across the long side</caption><thead><tr><th scope="col">Cells across</th><th scope="col">256 px</th><th scope="col">384 px</th><th scope="col">512 px</th></tr></thead><tbody><tr><th scope="row">6</th><td>0.065</td><td>0.059</td><td>0.052</td></tr><tr><th scope="row">8</th><td>0.079</td><td>0.082</td><td>0.063</td></tr><tr><th scope="row">12</th><td>0.088</td><td>0.092</td><td>0.088</td></tr><tr><th scope="row">16</th><td>0.087</td><td>0.107</td><td>0.103</td></tr><tr><th scope="row">24</th><td>0.057</td><td>0.090</td><td>0.099</td></tr><tr><th scope="row">32</th><td>0.021</td><td>0.065</td><td>0.092</td></tr><tr><th scope="row">48</th><td>0.000</td><td>0.022</td><td>0.062</td></tr><tr><th scope="row">64</th><td>0.000</td><td>0.004</td><td>0.022</td></tr></tbody></table>
+      </details>
+    </figure>
+
+    <div class="callout" role="note"><p><strong>Not established: which output people prefer.</strong> The detection rate comes from a hand-picked fault set, so it is not a general estimate of effectiveness. Edge-following is not appeal.</p></div>
+  </div>
+</section>
+
+<section class="sec" id="stages" aria-labelledby="h-stages">
+  <div class="wrap">
+    <h2 id="h-stages">Key stages</h2>
+    <ol class="stages" role="list">
+      <li>
+        <span class="n" aria-hidden="true">1</span>
+        <h3>Measure noise and known faults</h3>
+        <p>Twenty seeds per photo gave the noise floor, the run-to-run variation with settings unchanged. Damaging one cat output in known ways showed which measure sees which fault: a different photo moved SSIM by −0.310 and PSNR by −10.43 dB, while a blackened last row and column moved SSIM by only −0.001 and PSNR by −0.61 dB.</p>
+      </li>
+      <li>
+        <span class="n" aria-hidden="true">2</span>
+        <h3>Prefer relative checks to absolute ones</h3>
+        <p>A coarser mesh scores lower by design, so a fixed pass mark would reject good coarse output or accept bad dense output. A stored reference per photo and setting avoids this.</p>
+      </li>
+      <li>
+        <span class="n" aria-hidden="true">3</span>
+        <h3>Build the baseline</h3>
+        <p>Stored scores for four sample photos at two settings (the default and a 16 px grid) became a test with two-sided tolerances of 0.005 SSIM and 0.1 dB, meaning a rise fails as well as a drop. Updating the scores is a reviewed change.</p>
+      </li>
+      <li>
+        <span class="n" aria-hidden="true">4</span>
+        <h3>Validate it by fault injection</h3>
+        <p>Fault injection means changing the code on purpose and checking whether the tests notice. The existing tests other than the differential test, which compares the current output with a trusted reference version, caught 3 of the 9 faults. The differential test caught every change, harmless ones included, so it cannot tell a fault from an intended change. The baseline caught every injected fault and tested size, tolerated one of the two harmless changes and flagged the other.</p>
+      </li>
+      <li>
+        <span class="n" aria-hidden="true">5</span>
+        <h3>Try metamorphic relations</h3>
+        <p>A metamorphic test changes the input in a known way and checks that the output changes as expected, without knowing the exact correct output. A prototype of three such relations caught 6 of 12 injected faults, and the baseline caught all six too. It adds no detection, and whether it helps diagnose a fault was not measured.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="sec" id="learning" aria-labelledby="h-learning">
+  <div class="wrap">
+    <h2 id="h-learning">Learning</h2>
+    <ul class="learn" role="list">
+      <li>
+        <h3>Measure the normal variation before using a score to flag changes.</h3>
+        <p>SSIM and PSNR catch different errors, and the noise floor decides what counts as a real change.</p>
+      </li>
+      <li>
+        <h3>Validate a check by injecting faults before trusting it.</h3>
+        <p>Injection showed which checks add detection and which do not. It came last in this project and could have followed the first baseline at once.</p>
+      </li>
+      <li>
+        <h3>A baseline has to fail in both directions.</h3>
+        <p>Ignoring the saturation option (colour intensity, where 1.0 leaves colours unchanged) raised SSIM and PSNR on every photo, so a check that fails only on a drop would miss it.</p>
+      </li>
+      <li>
+        <h3>Keep tuning studies apart from regression checks.</h3>
+        <p>The grid and parameter sweeps answered which defaults to use, and no regression check, which looks for a change that makes something worse, relies on them.</p>
+      </li>
+      <li>
+        <h3>Match the evidence to the claim.</h3>
+        <p>Numeric stability needs platform data and appeal needs people. The list of proposed tests was longer than the evidence supported, and most are still unbuilt.</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="sec" id="next" aria-labelledby="h-next">
+  <div class="wrap">
+    <h2 id="h-next">Next steps</h2>
+    <p>The source gives no dates or owners. The baseline is built; everything below is proposed or not done.</p>
+    <ul class="steps" role="list">
+      <li><b>Five checks proposed, not built.</b> Colour options do not move the mesh. Jitter 0 stops points snapping to edges. The quality measures detect damage. Relation checks: a photo must beat the best other photo by at least 0.10 SSIM, and grid 9 must beat grid 40 by at least 0.05. Raising saturation above 1 changes the colours.</li>
+      <li><b>Defaults, not adopted.</b> A 16 px grid and a jitter of <code>max(12, grid / 2)</code>, the larger of 12 px and half the grid, are suggested. The Canny thresholds (100/200) and the smoothing strength (75) stay. Canny is an edge detector, and its low and high thresholds set how sensitive it is: a pixel counts as an edge when its brightness change is above the high value, or above the low value and connected to one that is. Smoothing is a bilateral filter that blurs flat areas while keeping edges, and 75 is its strength.</li>
+      <li><b>Not done.</b> A human preference comparison. The CI flake rate (how often a run fails without a real change), the effort of updating the baseline and user impact were also not measured.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<footer class="foot">
+  <div class="wide">
+    <p>Summary of <code>CASE_STUDY-revised.md</code>. The full study has the calibration appendix, the account of how the work unfolded, a glossary and the references.</p>
+  </div>
+</footer>
+
+<script>
+try { document.documentElement.lang = "en"; } catch (e) {}
+(function () {
+  var rail = document.getElementById("rail");
+  var links = rail.querySelectorAll("a");
+  var items = [];
+  for (var i = 0; i < links.length; i++) {
+    var el = document.getElementById(links[i].getAttribute("href").slice(1));
+    if (el) items.push({ el: el, link: links[i] });
+  }
+  var current = null, locked = false, lockTimer = 0, ticking = false;
+  var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function place(item) {
+    var l = item.link;
+    rail.style.setProperty("--ix", l.offsetLeft + "px");
+    rail.style.setProperty("--iw", l.offsetWidth + "px");
+    rail.style.setProperty("--iy", (l.offsetTop + l.offsetHeight - 10) + "px");
+    rail.setAttribute("data-ready", "");
+  }
+  function setCurrent(item) {
+    if (item === current) return;
+    current = item;
+    for (var k = 0; k < items.length; k++) {
+      if (items[k] === item) items[k].link.setAttribute("aria-current", "true");
+      else items[k].link.removeAttribute("aria-current");
+    }
+    if (!item) { rail.removeAttribute("data-ready"); return; }
+    place(item);
+    // On narrow screens, bring the current link to the middle of the bar, once per change
+    if (window.innerWidth < 1000 && rail.scrollWidth > rail.clientWidth) {
+      var left = item.link.offsetLeft - (rail.clientWidth - item.link.offsetWidth) / 2;
+      rail.scrollTo({ left: Math.max(0, left), behavior: calm ? "auto" : "smooth" });
+    }
+  }
+  function update() {
+    ticking = false;
+    if (locked) return;
+    var line = window.innerHeight * 0.3, found = null;
+    for (var j = 0; j < items.length; j++) {
+      if (items[j].el.getBoundingClientRect().top <= line) found = items[j];
+    }
+    setCurrent(found);
+  }
+  function unlockSoon(ms) {
+    clearTimeout(lockTimer);
+    lockTimer = setTimeout(function () { locked = false; update(); }, ms);
+  }
+  window.addEventListener("scroll", function () {
+    if (locked) unlockSoon(160);
+    else if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }, { passive: true });
+  // A tap on a link goes straight to that link, without the indicator stopping at every section on the way
+  for (var m = 0; m < items.length; m++) {
+    (function (item) {
+      item.link.addEventListener("click", function () { locked = true; setCurrent(item); unlockSoon(700); });
+    })(items[m]);
+  }
+  window.addEventListener("resize", function () { if (current) place(current); });
+  update();
+})();
+</script>
+
+</body></html>
