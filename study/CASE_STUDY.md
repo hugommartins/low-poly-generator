@@ -8,7 +8,7 @@ Results: seed-to-seed variation (standard deviation) reaches 0.006 SSIM and 0.3 
 
 ## Intent and status
 
-**Intent:** decide which image-quality checks `lowpoly` needs, from measurements instead of looking at outputs. Along the way the study measured which settings follow the photo best; that part is [Appendix A](#appendix-a-calibration-tuning-the-defaults). How the work unfolded, and what it taught, is [Appendix B](#appendix-b-the-journey). The existing exact tests and the ten metamorphic tests stay alongside the baseline; how the kinds of test fit together is in the [testing strategy](TESTING.md).
+**Intent:** decide which image-quality checks `lowpoly` needs, from measurements instead of looking at outputs. Along the way the study measured which settings follow the photo best; that part is [Appendix A](#appendix-a-calibration-tuning-the-defaults). How the work unfolded, and what it taught, is [Appendix B](#appendix-b-the-journey). The existing exact tests and the ten metamorphic tests stay alongside the baseline; how the kinds of test fit together is in the [testing strategy](../TESTING.md).
 
 **Status: exploratory.** No hypotheses were set beforehand.
 
@@ -22,7 +22,7 @@ Results: seed-to-seed variation (standard deviation) reaches 0.006 SSIM and 0.3 
 
 ## Context
 
-`lowpoly` turns a photo into an image made from flat-coloured triangles. Triangle size changes the style, so there is no single correct output. Before this work the four bundled sample outputs were judged by looking at them. The rest of the test suite checks program behaviour, such as valid geometry and reliable files ([testing strategy](TESTING.md)).
+`lowpoly` turns a photo into an image made from flat-coloured triangles. Triangle size changes the style, so there is no single correct output. Before this work the four bundled sample outputs were judged by looking at them. The rest of the test suite checks program behaviour, such as valid geometry and reliable files ([testing strategy](../TESTING.md)).
 
 ### The test oracle problem
 
@@ -87,7 +87,7 @@ None of this is new. The study adds what is project-specific: the noise floor of
 
 3.  **Build the baseline.** Stored scores for the four sample photos at two settings (default, grid 16) became a test with two-sided tolerances of 0.005 SSIM and 0.1 dB. Updating the scores is a reviewed change. The tolerances fall inside the seed-noise range, so seeds are pinned.
 
-4.  **Validate it by fault injection.** 21 changes (9 faults, 10 sizes of three faults, 2 harmless changes) were injected one at a time into a copy of the code. At the current tolerance, the baseline catches every injected fault and tested size (from a run of the validation script at that tolerance). The existing tests other than the differential test (example, property and metamorphic tests) caught 3 of the 9 faults; the differential test caught every change, harmless ones included, so it cannot tell a fault from an intended change. The baseline tolerated one of the two harmless changes and flagged the other, so its separation rests on two cases; the smallest fault it caught changes PSNR by only 0.06 dB more than the tolerated change ([baseline report](BASELINE_REPORT.md)).
+4.  **Validate it by fault injection.** 21 changes (9 faults, 10 sizes of three faults, 2 harmless changes) were injected one at a time into a copy of the code. At the current tolerance, the baseline catches every injected fault and tested size (from a run of the validation script at that tolerance). The existing tests other than the differential test (example, property and metamorphic tests) caught 3 of the 9 faults; the differential test caught every change, harmless ones included, so it cannot tell a fault from an intended change. The baseline tolerated one of the two harmless changes and flagged the other, so its separation rests on two cases; the smallest fault it caught changes PSNR by only 0.06 dB more than the tolerated change ([baseline report](../docs/BASELINE_REPORT.md)).
 
 5.  **Try metamorphic relations.** A prototype of three relations (colour options leave the mesh alone, jitter 0 stops edge snapping, and the photo and grid-size comparisons; not in the repository, so not reproducible) caught 6 of 12 injected faults (the list of 12 is not defined here), all of which the baseline also caught. It adds no detection; whether it helps diagnose a fault (colour or mesh) was not measured.
 
@@ -135,7 +135,7 @@ The study measured how the mesh follows the photo as each setting changes. That 
 
 ### Method
 
-"Best" grid size is the grid where the mesh follows the photo's edges most (edge lift), because SSIM and PSNR generally rise with density. Other parameters are compared at a fixed grid size, so density cannot explain an effect. The study covered 14 images bundled with scikit-image (portrait, animal, object, texture, text, sky, graphic; one is a synthetic colour wheel) at long sides of 256, 384 and 512 px, with grid size set as cells across the long side N = 6 to 64. A second sweep added 23 images (21 CC0 photos in `samples/study/`, two scikit-learn samples) and grouped all by edge density, leaving out the colour wheel (36 images). Both sweeps set the jitter to half the grid; the package default is a fixed 12 px, which is checked separately below. Detail and tables: [grid size by image type, size and complexity](GRID_RATIO_STUDY.md) and [parameter study](PARAMETER_STUDY.md).
+"Best" grid size is the grid where the mesh follows the photo's edges most (edge lift), because SSIM and PSNR generally rise with density. Other parameters are compared at a fixed grid size, so density cannot explain an effect. The study covered 14 images bundled with scikit-image (portrait, animal, object, texture, text, sky, graphic; one is a synthetic colour wheel) at long sides of 256, 384 and 512 px, with grid size set as cells across the long side N = 6 to 64. A second sweep added 23 images (21 CC0 photos in `samples/study/`, two scikit-learn samples) and grouped all by edge density, leaving out the colour wheel (36 images). Both sweeps set the jitter to half the grid; the package default is a fixed 12 px, which is checked separately below. Detail and tables: [grid size by image type, size and complexity](../docs/GRID_RATIO_STUDY.md) and [parameter study](../docs/PARAMETER_STUDY.md).
 
 The four-photo study first showed the shape: SSIM kept rising with density, while edge lift peaked.
 
