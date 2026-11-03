@@ -55,5 +55,10 @@
     })(items[m]);
   }
   window.addEventListener("resize", function () { if (current) place(current); });
-  update();
+  var initial = null;
+  for (var n = 0; n < items.length; n++) {
+    if (items[n].link.getAttribute("href") === window.location.hash) initial = items[n];
+  }
+  if (initial) setCurrent(initial);
+  else update();
 })();
