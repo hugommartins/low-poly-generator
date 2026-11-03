@@ -8,11 +8,10 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Literata:ital,opsz,wght@1,7..72,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Space+Grotesk:ital,wght@0,400..700;1,400..700&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to the case study</a>
 
 <header class="hero">
   <div class="wide">
@@ -314,7 +313,7 @@
 <section class="sec" id="next" aria-labelledby="h-next">
   <div class="wrap">
     <h2 id="h-next">Next steps</h2>
-    <p>The source gives no dates or owners. The baseline is built; everything below is proposed or not done.</p>
+    <p>The baseline is built; everything below is proposed or not done.</p>
     <ul class="steps" role="list">
       <li><b>Five checks proposed, not built.</b> Colour options do not move the mesh. Jitter 0 stops points snapping to edges. The quality measures detect damage. Relation checks compare photos and grid sizes. Raising saturation above 1 changes the colours.</li>
       <li><b>Defaults, not adopted.</b> A 16 px grid and a jitter of <code>max(12, grid / 2)</code>, the larger of 12 px and half the grid, are suggested. The Canny thresholds (100/200) and the smoothing strength (75) stay. Canny is an edge detector, and its low and high thresholds set how sensitive it is: a pixel counts as an edge when its brightness change is above the high value, or above the low value and connected to one that is. Smoothing is a bilateral filter that blurs flat areas while keeping edges, and 75 is its strength.</li>

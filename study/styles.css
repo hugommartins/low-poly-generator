@@ -14,11 +14,10 @@ img { max-width: 100%; }
   --muted: #4b575b;
   --rule: #cfd6d8;
   --accent: #bd4a08;
-  --head: "Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --body: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --serif: "Literata", Georgia, "Times New Roman", serif;
+  --head: "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --body: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --tail: #3f7a8a;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --gl: max(16px, env(safe-area-inset-left, 0px));
   --gr: max(16px, env(safe-area-inset-right, 0px));
   color-scheme: light;
@@ -49,14 +48,14 @@ code { font: 500 1em var(--mono); background: var(--tint); padding: .08em .35em;
 .hero { border-top: 6px solid var(--ink); }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 2rem 3rem; align-items: center; padding-block: 2.75rem 0; }
 .hero h1 { font-size: clamp(2.3rem, 4.6vw, 3.4rem); line-height: 1.04; font-weight: 700; letter-spacing: -.022em; }
-.hero h1 .tail { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; color: var(--tail); font-size: 1.04em; }
+.hero h1 .tail { font-family: var(--head); font-style: italic; font-weight: 400; letter-spacing: -.01em; color: var(--tail); font-size: 1.04em; }
 .lede { font-size: clamp(1rem, 1.8vw, 1.1rem); line-height: 1.65; margin: 1.75rem 0 0; min-width: 0; }
 .mosaic { display: block; width: 100%; height: auto; justify-self: end; filter: saturate(.9); }
 .mosaic polygon { stroke: #fff; stroke-width: 1.5; stroke-linejoin: round; }
 .strip { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--rule); }
 .strip li { margin: 0; padding: 1.5rem 1.4rem 1.7rem; border-left: 1px solid var(--rule); min-width: 0; }
 .strip li:first-child { border-left: 0; padding-left: 0; }
-.strip .num { font: 700 clamp(1.8rem, 3vw, 2.2rem)/1.05 var(--head); letter-spacing: -.02em; color: var(--ink); margin: 0 0 .55rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.strip .num { font: 700 clamp(1.6rem, 2.5vw, 2rem)/1.05 var(--head); letter-spacing: -.02em; color: var(--ink); margin: 0 0 .55rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .strip .lab { margin: 0; font-size: .86rem; line-height: 1.55; color: var(--muted); }
 
 /* Layout: links in a left rail on wide screens, a sticky bar on narrow ones */
@@ -114,7 +113,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .terms strong { font-family: var(--head); font-weight: 700; color: var(--ink); }
 .stats { list-style: none; margin: 0 0 2.25rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); gap: 1.75rem 2.5rem; }
 .stat { padding: 0; margin: 0; min-width: 0; }
-.stat .num { font: 700 clamp(1.6rem, 3.6vw, 2.05rem)/1.05 var(--head); letter-spacing: -.015em; color: var(--ink); margin: 0 0 .55rem; font-variant-numeric: tabular-nums; }
+.stat .num { font: 700 clamp(1.4rem, 3vw, 1.8rem)/1.05 var(--head); letter-spacing: -.015em; color: var(--ink); margin: 0 0 .55rem; font-variant-numeric: tabular-nums; }
 .stat .lab { margin: 0; font-size: .86rem; line-height: 1.6; }
 
 .fig { margin: 2rem 0 0; }
@@ -175,7 +174,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   .mosaic { display: none; }
   .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 2.25rem; }
   .strip li { padding: 1.3rem 1rem 1.5rem; }
-  .strip .num { font-size: 1.5rem; }
+  .strip .num { font-size: 1.3rem; }
   .strip li:nth-child(odd) { border-left: 0; padding-left: 0; }
   .strip li:nth-child(n+3) { border-top: 1px solid var(--rule); }
 }
